@@ -15,6 +15,10 @@ public class TeslaApiCache {
         this.authToken = authToken;
     }
 
+    public boolean hasAuthToken() {
+        return authToken != null;
+    }
+
     public Long getId() {
         return id;
     }

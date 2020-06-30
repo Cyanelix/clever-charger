@@ -24,7 +24,7 @@ public class TeslaClient {
         this.teslaApiCache = teslaApiCache;
     }
 
-    public String getAuthToken() {
+    private String getAuthToken() {
         AccessTokenRequest accessTokenRequest = new AccessTokenRequest(
                 teslaClientConfig.getClientId(),
                 teslaClientConfig.getClientSecret(),
@@ -82,6 +82,10 @@ public class TeslaClient {
     }
 
     private <T> HttpEntity<T> createRequestEntity(T body) {
+        if (!teslaApiCache.hasAuthToken()) {
+            teslaApiCache.setAuthToken(getAuthToken());
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + teslaApiCache.getAuthToken());
 

@@ -10,6 +10,7 @@ import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpStatusCode;
+import org.mockserver.verify.VerificationTimes;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,9 +23,11 @@ import static org.mockserver.model.JsonBody.json;
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {8787})
 class TeslaClientTest {
+    private final static String AUTH_TOKEN = "auth-token";
+
     private TeslaClientConfig teslaClientConfig;
     private TeslaClient teslaClient;
-    private final TeslaApiCache teslaApiCache = mock(TeslaApiCache.class);
+    private final TeslaApiCache teslaApiCache = new TeslaApiCache();
 
     @BeforeEach
     public void setup(MockServerClient mockServerClient) {
@@ -37,14 +40,74 @@ class TeslaClientTest {
     }
 
     @Test
-    void getAccessToken_validPassword(MockServerClient mockServerClient) {
+    void authTokenCached_getIdFromVin_returnsId(MockServerClient mockServerClient) {
         // Given...
+        Long expectedId = 123L;
+        String vin = "DUMMY-VIN";
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+
+        given(teslaClientConfig.getVin()).willReturn(vin);
+
+        mockVehiclesEndpoint(mockServerClient, expectedId, vin);
+
+        // When...
+        Long id = teslaClient.getIdFromVin();
+
+        // Then...
+        assertThat(id).isEqualTo(expectedId);
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.exactly(0));
+    }
+
+    @Test
+    void authTokenNotCached_getIdFromVin_returnsIdWithAuthCall(MockServerClient mockServerClient) {
+        // Given...
+        Long expectedId = 123L;
+        String vin = "DUMMY-VIN";
+
+        given(teslaClientConfig.getVin()).willReturn(vin);
+
+        mockAuthTokenEndpoint(mockServerClient);
+        mockVehiclesEndpoint(mockServerClient, expectedId, vin);
+
+        // When...
+        Long id = teslaClient.getIdFromVin();
+
+        // Then...
+        assertThat(id).isEqualTo(expectedId);
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.once());
+    }
+
+    @Test
+    void authAndIdCached_getChargeState_returnsValue(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+        int expectedBatteryLevel = 100;
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        mockChargeStateEndpoint(mockServerClient, id, expectedBatteryLevel);
+
+        // When...
+        ChargeState chargeState = teslaClient.getChargeState(id);
+
+        // Then...
+        assertThat(chargeState.getBatteryLevel()).isEqualTo(expectedBatteryLevel);
+
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles"), VerificationTimes.exactly(0));
+    }
+
+    private void mockAuthTokenEndpoint(MockServerClient mockServerClient) {
         given(teslaClientConfig.getClientId()).willReturn("client-id");
         given(teslaClientConfig.getClientSecret()).willReturn("client-secret");
         given(teslaClientConfig.getEmail()).willReturn("email-address");
         given(teslaClientConfig.getPassword()).willReturn("dummy-password");
-
-        String expectedAuthToken = "auth-token";
 
         mockServerClient.when(
                 request()
@@ -64,29 +127,16 @@ class TeslaClientTest {
                 .withStatusCode(HttpStatusCode.OK_200.code())
                 .withHeader("Content-Type", "application/json; charset=utf-8")
                 .withBody("{\n" +
-                        "    \"access_token\": \"" + expectedAuthToken + "\",\n" +
+                        "    \"access_token\": \"" + AUTH_TOKEN + "\",\n" +
                         "    \"token_type\": \"bearer\",\n" +
                         "    \"expires_in\": 3888000,\n" +
                         "    \"refresh_token\": \"refresh-token\",\n" +
                         "    \"created_at\": 1593297025\n" +
                         "}")
         );
-
-        // When...
-        String authToken = teslaClient.getAuthToken();
-
-        // Then...
-        assertThat(authToken)
-                .isEqualTo(expectedAuthToken);
     }
 
-    @Test
-    void getId_fromVin(MockServerClient mockServerClient) {
-        // Given...
-        Long expectedId = 123L;
-        given(teslaClientConfig.getVin()).willReturn("DUMMY-VIN");
-        given(teslaApiCache.getAuthToken()).willReturn("auth-token");
-
+    private void mockVehiclesEndpoint(MockServerClient mockServerClient, Long expectedId, String vin) {
         mockServerClient.when(
                 request()
                         .withMethod("GET")
@@ -100,7 +150,7 @@ class TeslaClientTest {
                         "        {\n" +
                         "            \"id\": " + expectedId + ",\n" +
                         "            \"vehicle_id\": 456,\n" +
-                        "            \"vin\": \"DUMMY-VIN\",\n" +
+                        "            \"vin\": \"" + vin + "\",\n" +
                         "            \"display_name\": \"Display Name\",\n" +
                         "            \"option_codes\": \"AD15,MDL3\",\n" +
                         "            \"color\": null,\n" +
@@ -116,26 +166,13 @@ class TeslaClientTest {
                         "    ],\n" +
                         "    \"count\": 1\n" +
                         "}"));
-
-        // When...
-        Long id = teslaClient.getIdFromVin();
-
-        // Then...
-        assertThat(id).isEqualTo(expectedId);
     }
 
-    @Test
-    void getChargeState_returnsValue(MockServerClient mockServerClient) {
-        // Given...
-        Long id = 123L;
-        int expectedBatteryLevel = 100;
-
-        given(teslaApiCache.getAuthToken()).willReturn("auth-token");
-
+    private void mockChargeStateEndpoint(MockServerClient mockServerClient, Long id, int expectedBatteryLevel) {
         mockServerClient.when(
                 request()
                         .withMethod("GET")
-                        .withHeader("Authorization", "Bearer auth-token")
+                        .withHeader("Authorization", "Bearer " + AUTH_TOKEN)
                         .withPath("/api/1/vehicles/" + id + "/data_request/charge_state")
         ).respond(response()
                 .withStatusCode(HttpStatusCode.OK_200.code())
@@ -187,11 +224,5 @@ class TeslaClientTest {
                         "        \"user_charge_enable_request\": null\n" +
                         "    }\n" +
                         "}"));
-
-        // When...
-        ChargeState chargeState = teslaClient.getChargeState(id);
-
-        // Then...
-        assertThat(chargeState.getBatteryLevel()).isEqualTo(expectedBatteryLevel);
     }
 }
