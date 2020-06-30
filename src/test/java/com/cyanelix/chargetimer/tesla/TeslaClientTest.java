@@ -1,7 +1,7 @@
 package com.cyanelix.chargetimer.tesla;
 
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
-import com.cyanelix.chargetimer.tesla.domain.ChargeState;
+import com.cyanelix.chargetimer.tesla.model.ChargeState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,13 +24,16 @@ import static org.mockserver.model.JsonBody.json;
 class TeslaClientTest {
     private TeslaClientConfig teslaClientConfig;
     private TeslaClient teslaClient;
+    private final TeslaApiCache teslaApiCache = mock(TeslaApiCache.class);
 
     @BeforeEach
-    public void setup() {
+    public void setup(MockServerClient mockServerClient) {
+        mockServerClient.reset();
+
         teslaClientConfig = mock(TeslaClientConfig.class);
         given(teslaClientConfig.getBaseUrl()).willReturn("http://localhost:8787");
 
-        teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig);
+        teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig, teslaApiCache);
     }
 
     @Test
@@ -82,10 +85,12 @@ class TeslaClientTest {
         // Given...
         Long expectedId = 123L;
         given(teslaClientConfig.getVin()).willReturn("DUMMY-VIN");
+        given(teslaApiCache.getAuthToken()).willReturn("auth-token");
 
         mockServerClient.when(
                 request()
                         .withMethod("GET")
+                        .withHeader("Authorization", "Bearer auth-token")
                         .withPath("/api/1/vehicles")
         ).respond(response()
                 .withStatusCode(HttpStatusCode.OK_200.code())
@@ -125,9 +130,12 @@ class TeslaClientTest {
         Long id = 123L;
         int expectedBatteryLevel = 100;
 
+        given(teslaApiCache.getAuthToken()).willReturn("auth-token");
+
         mockServerClient.when(
                 request()
                         .withMethod("GET")
+                        .withHeader("Authorization", "Bearer auth-token")
                         .withPath("/api/1/vehicles/" + id + "/data_request/charge_state")
         ).respond(response()
                 .withStatusCode(HttpStatusCode.OK_200.code())

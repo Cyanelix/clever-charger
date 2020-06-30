@@ -1,10 +1,13 @@
 package com.cyanelix.chargetimer.tesla;
 
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
-import com.cyanelix.chargetimer.tesla.domain.ChargeState;
-import com.cyanelix.chargetimer.tesla.domain.ChargeStateResponse;
+import com.cyanelix.chargetimer.tesla.model.*;
 import com.cyanelix.chargetimer.tesla.exception.TeslaClientException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,11 +15,13 @@ import org.springframework.web.client.RestTemplate;
 public class TeslaClient {
     private final RestTemplate restTemplate;
     private final TeslaClientConfig teslaClientConfig;
+    private final TeslaApiCache teslaApiCache;
 
     @Autowired
-    public TeslaClient(RestTemplate restTemplate, TeslaClientConfig teslaClientConfig) {
+    public TeslaClient(RestTemplate restTemplate, TeslaClientConfig teslaClientConfig, TeslaApiCache teslaApiCache) {
         this.restTemplate = restTemplate;
         this.teslaClientConfig = teslaClientConfig;
+        this.teslaApiCache = teslaApiCache;
     }
 
     public String getAuthToken() {
@@ -39,16 +44,18 @@ public class TeslaClient {
     }
 
     public Long getIdFromVin() {
-        VehiclesResponse vehiclesResponse = restTemplate.getForObject(
-                teslaClientConfig.getBaseUrl() + "/api/1/vehicles",
-                VehiclesResponse.class);
+        HttpEntity<Void> request = createRequestEntity();
 
-        if (vehiclesResponse == null) {
+        HttpEntity<VehiclesResponse> vehiclesResponse = restTemplate.exchange(
+                teslaClientConfig.getBaseUrl() + "/api/1/vehicles",
+                HttpMethod.GET, request, VehiclesResponse.class);
+
+        if (vehiclesResponse.getBody() == null) {
             throw new TeslaClientException(
                     "No response received from /api/1/vehicles endpoint on the Tesla API");
         }
 
-        return vehiclesResponse.getVehicles().stream()
+        return vehiclesResponse.getBody().getVehicles().stream()
                 .filter(vehicle -> vehicle.getVin().equals(teslaClientConfig.getVin()))
                 .findAny()
                 .map(Vehicle::getId)
@@ -56,15 +63,28 @@ public class TeslaClient {
     }
 
     public ChargeState getChargeState(Long id) {
-        ChargeStateResponse chargeStateResponse = restTemplate.getForObject(
-                teslaClientConfig.getBaseUrl() + "/api/1/vehicles/" + id + "/data_request/charge_state",
-                ChargeStateResponse.class);
+        HttpEntity<Void> requestEntity = createRequestEntity();
 
-        if (chargeStateResponse == null) {
+        ResponseEntity<ChargeStateResponse> chargeStateResponse = restTemplate.exchange(
+                teslaClientConfig.getBaseUrl() + "/api/1/vehicles/{id}/data_request/charge_state",
+                HttpMethod.GET, requestEntity, ChargeStateResponse.class, id);
+
+        if (chargeStateResponse.getBody() == null) {
             throw new TeslaClientException(
                     "No response received from charge_state endpoint on the Tesla API");
         }
 
-        return chargeStateResponse.getChargeState();
+        return chargeStateResponse.getBody().getChargeState();
+    }
+
+    private HttpEntity<Void> createRequestEntity() {
+        return createRequestEntity(null);
+    }
+
+    private <T> HttpEntity<T> createRequestEntity(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + teslaApiCache.getAuthToken());
+
+        return new HttpEntity<>(body, headers);
     }
 }

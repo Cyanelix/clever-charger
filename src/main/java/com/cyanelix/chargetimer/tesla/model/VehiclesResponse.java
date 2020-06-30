@@ -1,5 +1,6 @@
-package com.cyanelix.chargetimer.tesla;
+package com.cyanelix.chargetimer.tesla.model;
 
+import com.cyanelix.chargetimer.tesla.model.Vehicle;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;

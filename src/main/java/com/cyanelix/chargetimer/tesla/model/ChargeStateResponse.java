@@ -1,4 +1,4 @@
-package com.cyanelix.chargetimer.tesla.domain;
+package com.cyanelix.chargetimer.tesla.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
