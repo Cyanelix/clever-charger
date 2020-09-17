@@ -43,7 +43,7 @@ public class TeslaClient {
         return accessTokenResponse.getAccessToken();
     }
 
-    public Long getIdFromVin() {
+    private Long getIdFromVin() {
         HttpEntity<Void> request = createRequestEntity();
 
         HttpEntity<VehiclesResponse> vehiclesResponse = restTemplate.exchange(
@@ -62,12 +62,16 @@ public class TeslaClient {
                 .orElseThrow(() -> new TeslaClientException("No vehicle with matching VIN found"));
     }
 
-    public ChargeState getChargeState(Long id) {
+    public ChargeState getChargeState() {
+        if (!teslaApiCache.hasId()) {
+            teslaApiCache.setId(getIdFromVin());
+        }
+
         HttpEntity<Void> requestEntity = createRequestEntity();
 
         ResponseEntity<ChargeStateResponse> chargeStateResponse = restTemplate.exchange(
                 teslaClientConfig.getBaseUrl() + "/api/1/vehicles/{id}/data_request/charge_state",
-                HttpMethod.GET, requestEntity, ChargeStateResponse.class, id);
+                HttpMethod.GET, requestEntity, ChargeStateResponse.class, teslaApiCache.getId());
 
         if (chargeStateResponse.getBody() == null) {
             throw new TeslaClientException(
