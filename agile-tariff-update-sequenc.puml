@@ -1,0 +1,22 @@
+@startuml
+participant AgileTariff <<Tariff>>
+
+[->> AgileTariff: poll()
+activate AgileTariff
+
+alt AgileTariff periods updated
+    AgileTariff -> Scheduler: getNextCheck
+    activate Scheduler
+    AgileTariff <-- Scheduler: getNextCheck
+    deactivate Scheduler
+
+    alt earliest new AgileTariff period is before nextCheck
+        AgileTariff -> Scheduler: setNextCheck(now)
+        activate Scheduler
+        AgileTariff <-- Scheduler
+        deactivate Scheduler
+    end
+end
+
+deactivate AgileTariff
+@enduml

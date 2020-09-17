@@ -1,0 +1,15 @@
+@startuml
+note over RequiredCharges, Scheduler: required charges backed by a YAML file, any\ntime that file changes, trigger a new run of\nthe main charging process.
+
+[->> RequiredCharges: poll()
+activate RequiredCharges
+
+alt RequiredCharges datastore updated
+    RequiredCharges -> Scheduler: setNextCheck(now)
+    activate Scheduler
+    RequiredCharges <-- Scheduler
+    deactivate Scheduler
+end
+
+deactivate RequiredCharges
+@enduml
