@@ -4,5 +4,5 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface Tariff {
-    List<RatePeriod> getRatePeriods(LocalDateTime from, LocalDateTime to);
+    List<RatePeriod> getRatePeriodsUntil(LocalDateTime from, LocalDateTime to);
 }
