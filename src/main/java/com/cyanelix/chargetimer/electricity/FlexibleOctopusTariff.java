@@ -24,7 +24,7 @@ public class FlexibleOctopusTariff implements Tariff {
     private final float nightRate = 9.38f;
 
     @Override
-    public List<RatePeriod> getRatePeriodsBetween(LocalDateTime from, LocalDateTime to) {
+    public List<RatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to) {
         if (from.isAfter(to)) {
             throw new TariffException("From date must be before to date");
         }
@@ -32,18 +32,15 @@ public class FlexibleOctopusTariff implements Tariff {
         RatePeriod firstRatePeriod;
 
         if (from.toLocalTime().isBefore(nightStart)) {
-            ZonedDateTime previousDayPeriod =
-                    atTime(ZonedDateTime.of(from, utcZone).minusDays(1), dayStart);
+            ZonedDateTime previousDayPeriod = atTime(from.minusDays(1), dayStart);
             firstRatePeriod = new RatePeriod(dayRate, previousDayPeriod,
                     previousDayPeriod.with(nextNightStartAdjuster));
         } else if (from.toLocalTime().isBefore(dayStart)) {
-            ZonedDateTime startNightPeriod =
-                    atTime(ZonedDateTime.of(from, utcZone), nightStart);
+            ZonedDateTime startNightPeriod = atTime(from, nightStart);
             firstRatePeriod = new RatePeriod(nightRate, startNightPeriod,
                     startNightPeriod.with(nextDayStartAdjuster));
         } else {
-            ZonedDateTime startDayPeriod =
-                    atTime(ZonedDateTime.of(from, utcZone), dayStart);
+            ZonedDateTime startDayPeriod = atTime(from, dayStart);
             firstRatePeriod = new RatePeriod(dayRate, startDayPeriod,
                     startDayPeriod.with(nextNightStartAdjuster));
         }
@@ -51,8 +48,7 @@ public class FlexibleOctopusTariff implements Tariff {
         List<RatePeriod> ratePeriods = new ArrayList<>();
         ratePeriods.add(firstRatePeriod);
 
-        while (ratePeriods.get(ratePeriods.size() - 1).getEnd()
-                .isBefore(ZonedDateTime.of(to, utcZone))) {
+        while (ratePeriods.get(ratePeriods.size() - 1).getEnd().isBefore(to)) {
             ratePeriods.add(getNextRatePeriod(ratePeriods.get(ratePeriods.size() - 1)));
         }
 

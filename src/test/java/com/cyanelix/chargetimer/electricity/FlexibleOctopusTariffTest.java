@@ -2,7 +2,7 @@ package com.cyanelix.chargetimer.electricity;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,8 +14,8 @@ class FlexibleOctopusTariffTest {
     @Test
     void fromDateIsAfterToDate_throwException() {
         // Given...
-        LocalDateTime fromDateTime = LocalDateTime.MAX;
-        LocalDateTime toDateTime = LocalDateTime.MIN;
+        ZonedDateTime fromDateTime = ZonedDateTime.parse("2020-01-02T12:00:00Z");
+        ZonedDateTime toDateTime = ZonedDateTime.parse("2020-01-01T12:00:00Z");
 
         // When...
         Throwable thrown = catchThrowable(() ->
@@ -29,8 +29,8 @@ class FlexibleOctopusTariffTest {
     @Test
     void periodInsideOneRate_returnSingleRatePeriod() {
         // Given...
-        LocalDateTime fromDateTime = LocalDateTime.of(2020, 9, 17, 12, 0);
-        LocalDateTime toDateTime = LocalDateTime.of(2020, 9, 17, 13, 0);
+        ZonedDateTime fromDateTime = ZonedDateTime.parse("2020-09-17T12:00Z");
+        ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-17T13:00Z");
 
         // When...
         List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
@@ -47,8 +47,8 @@ class FlexibleOctopusTariffTest {
     @Test
     void periodCoversTwoRatesCompletely_returnTwoRatePeriods() {
         // Given...
-        LocalDateTime fromDateTime = LocalDateTime.of(2020, 9, 17, 0, 30);
-        LocalDateTime toDateTime = LocalDateTime.of(2020, 9, 18, 0, 30);
+        ZonedDateTime fromDateTime = ZonedDateTime.parse("2020-09-17T00:30Z");
+        ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-18T00:30Z");
 
         // When...
         List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
@@ -70,8 +70,8 @@ class FlexibleOctopusTariffTest {
     @Test
     void periodCoversFourTimes_returnFour() {
         // Given...
-        LocalDateTime fromDateTime = LocalDateTime.of(2020, 9, 17, 0, 29);
-        LocalDateTime toDateTime = LocalDateTime.of(2020, 9, 18, 0, 31);
+        ZonedDateTime fromDateTime = ZonedDateTime.parse("2020-09-17T00:29Z");
+        ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-18T00:31Z");
 
         // When...
         List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
