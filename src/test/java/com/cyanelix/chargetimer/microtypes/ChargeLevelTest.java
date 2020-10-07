@@ -1,6 +1,8 @@
 package com.cyanelix.chargetimer.microtypes;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -40,5 +42,28 @@ class ChargeLevelTest {
         assertThat(thrown)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Charge level must be at least 0");
+    }
+
+    @Test
+    void chargeLevel_toString() {
+        // Given...
+        ChargeLevel chargeLevel = ChargeLevel.of(100);
+
+        // When...
+        String value = chargeLevel.toString();
+
+        // Then...
+        assertThat(value).isEqualTo("100%");
+    }
+
+    @ParameterizedTest()
+    @CsvSource({
+            "100, 50, true",
+            "50, 100, false",
+            "0, 0, false",
+            "100, 100, false"})
+    void testExceeds(int left, int right, boolean expectedResult) {
+        assertThat(ChargeLevel.of(left).exceeds(ChargeLevel.of(right)))
+                .isEqualTo(expectedResult);
     }
 }

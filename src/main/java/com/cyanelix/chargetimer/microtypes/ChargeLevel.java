@@ -22,4 +22,13 @@ public final class ChargeLevel {
     public int getValue() {
         return value;
     }
+
+    public boolean exceeds(ChargeLevel that) {
+        return this.getValue() > that.getValue();
+    }
+
+    @Override
+    public String toString() {
+        return value + "%";
+    }
 }

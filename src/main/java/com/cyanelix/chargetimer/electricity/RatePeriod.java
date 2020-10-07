@@ -1,6 +1,7 @@
 package com.cyanelix.chargetimer.electricity;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 public final class RatePeriod {
     private final float pence;
@@ -23,5 +24,16 @@ public final class RatePeriod {
 
     public ZonedDateTime getEnd() {
         return end;
+    }
+
+    public long getSeconds() {
+        return end.toEpochSecond() - start.toEpochSecond();
+    }
+
+    @Override
+    public String toString() {
+        return start.format(DateTimeFormatter.ISO_DATE_TIME) + " - "
+                + end.format(DateTimeFormatter.ISO_DATE_TIME)
+                + ": " + pence + "p";
     }
 }
