@@ -1,0 +1,8 @@
+tesla:
+  client:
+    baseUrl: https://owner-api.teslamotors.com
+    client_id:
+    client_secret:
+    email:
+    password:
+    vin:
