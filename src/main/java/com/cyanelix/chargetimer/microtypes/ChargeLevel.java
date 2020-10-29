@@ -23,8 +23,13 @@ public final class ChargeLevel {
         return value;
     }
 
+    // TODO: Can I get rid of this?
     public boolean exceeds(ChargeLevel that) {
         return this.getValue() > that.getValue();
+    }
+
+    public boolean equalsOrExceeds(ChargeLevel that) {
+        return this.getValue() >= that.getValue();
     }
 
     @Override

@@ -2,18 +2,13 @@ package com.cyanelix.chargetimer.electricity;
 
 import com.cyanelix.chargetimer.util.TimeTemporalAdjuster;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjuster;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class FlexibleOctopusTariff implements Tariff {
-    private final ZoneId utcZone = ZoneId.of("UTC");
-
     private final LocalTime nightStart = LocalTime.of(0, 30);
     private final LocalTime dayStart = LocalTime.of(5, 30);
 
@@ -24,28 +19,28 @@ public class FlexibleOctopusTariff implements Tariff {
     private final float nightRate = 9.38f;
 
     @Override
-    public List<RatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to) {
+    public List<PricedRatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to) {
         if (from.isAfter(to)) {
             throw new TariffException("From date must be before to date");
         }
 
-        RatePeriod firstRatePeriod;
+        PricedRatePeriod firstRatePeriod;
 
         if (from.toLocalTime().isBefore(nightStart)) {
             ZonedDateTime previousDayPeriod = atTime(from.minusDays(1), dayStart);
-            firstRatePeriod = new RatePeriod(dayRate, previousDayPeriod,
+            firstRatePeriod = new PricedRatePeriod(dayRate, previousDayPeriod,
                     previousDayPeriod.with(nextNightStartAdjuster));
         } else if (from.toLocalTime().isBefore(dayStart)) {
             ZonedDateTime startNightPeriod = atTime(from, nightStart);
-            firstRatePeriod = new RatePeriod(nightRate, startNightPeriod,
+            firstRatePeriod = new PricedRatePeriod(nightRate, startNightPeriod,
                     startNightPeriod.with(nextDayStartAdjuster));
         } else {
             ZonedDateTime startDayPeriod = atTime(from, dayStart);
-            firstRatePeriod = new RatePeriod(dayRate, startDayPeriod,
+            firstRatePeriod = new PricedRatePeriod(dayRate, startDayPeriod,
                     startDayPeriod.with(nextNightStartAdjuster));
         }
 
-        List<RatePeriod> ratePeriods = new ArrayList<>();
+        List<PricedRatePeriod> ratePeriods = new ArrayList<>();
         ratePeriods.add(firstRatePeriod);
 
         while (ratePeriods.get(ratePeriods.size() - 1).getEnd().isBefore(to)) {
@@ -63,15 +58,15 @@ public class FlexibleOctopusTariff implements Tariff {
     }
 
     // TODO: Use and test this
-    private RatePeriod getNextRatePeriod(RatePeriod previousRatePeriod) {
+    private PricedRatePeriod getNextRatePeriod(PricedRatePeriod previousRatePeriod) {
         ZonedDateTime previousEnd = previousRatePeriod.getEnd();
 
         if (previousRatePeriod.getPence() == dayRate) {
             ZonedDateTime nextEnd = previousEnd.with(nextDayStartAdjuster);
-            return new RatePeriod(nightRate, previousEnd, nextEnd);
+            return new PricedRatePeriod(nightRate, previousEnd, nextEnd);
         }
 
         ZonedDateTime nextEnd = previousEnd.with(nextNightStartAdjuster);
-        return new RatePeriod(dayRate, previousEnd, nextEnd);
+        return new PricedRatePeriod(dayRate, previousEnd, nextEnd);
     }
 }

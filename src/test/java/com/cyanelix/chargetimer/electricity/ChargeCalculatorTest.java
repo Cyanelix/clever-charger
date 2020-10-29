@@ -49,11 +49,16 @@ class ChargeCalculatorTest {
         RequiredCharge requiredCharge = RequiredCharge.of(requiredLevel, requiredBy);
 
         // When...
-        ZonedDateTime nextChargeStart =
-                chargeCalculator.getNextChargeStart(requiredCharge, currentCharge);
+        RatePeriod nextChargePeriod = chargeCalculator.getNextChargePeriod(
+                requiredCharge, currentCharge);
 
         // Then...
-        assertThat(nextChargeStart).isEqualTo(expected);
+        if (expected == null) {
+            assertThat(nextChargePeriod).isSameAs(RatePeriod.NULL_RATE_PERIOD);
+        } else {
+            assertThat(((PricedRatePeriod) nextChargePeriod).getStart())
+                    .isEqualTo(expected);
+        }
     }
 
     private static Stream<Arguments> provideChargeParameters() {
@@ -79,16 +84,16 @@ class ChargeCalculatorTest {
     }
 
     private void mockTariff(ZonedDateTime maxDateTime) {
-        List<RatePeriod> mockRates = Stream.of(
-                new RatePeriod(3f, ZonedDateTime.parse("2020-01-01T01:00Z"),
+        List<PricedRatePeriod> mockRates = Stream.of(
+                new PricedRatePeriod(3f, ZonedDateTime.parse("2020-01-01T01:00Z"),
                         ZonedDateTime.parse("2020-01-01T02:00Z")),
-                new RatePeriod(2f, ZonedDateTime.parse("2020-01-01T02:00Z"),
+                new PricedRatePeriod(2f, ZonedDateTime.parse("2020-01-01T02:00Z"),
                         ZonedDateTime.parse("2020-01-01T03:00Z")),
-                new RatePeriod(1f, ZonedDateTime.parse("2020-01-01T03:00Z"),
+                new PricedRatePeriod(1f, ZonedDateTime.parse("2020-01-01T03:00Z"),
                         ZonedDateTime.parse("2020-01-01T04:00Z")),
-                new RatePeriod(2f, ZonedDateTime.parse("2020-01-01T04:00Z"),
+                new PricedRatePeriod(2f, ZonedDateTime.parse("2020-01-01T04:00Z"),
                         ZonedDateTime.parse("2020-01-01T05:00Z")),
-                new RatePeriod(3f, ZonedDateTime.parse("2020-01-01T05:00Z"),
+                new PricedRatePeriod(3f, ZonedDateTime.parse("2020-01-01T05:00Z"),
                         ZonedDateTime.parse("2020-01-01T06:00Z")))
                 .filter(ratePeriod -> ratePeriod.getStart().isBefore(maxDateTime))
                 .collect(Collectors.toList());

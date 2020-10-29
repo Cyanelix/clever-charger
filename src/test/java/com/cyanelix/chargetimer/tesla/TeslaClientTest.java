@@ -12,9 +12,12 @@ import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpStatusCode;
 import org.mockserver.verify.VerificationTimes;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockserver.model.HttpRequest.request;
@@ -38,6 +41,25 @@ class TeslaClientTest {
         given(teslaClientConfig.getBaseUrl()).willReturn("http://localhost:8787");
 
         teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig, teslaApiCache);
+    }
+
+    @Test
+    void authAndIdCached_carAsleep_getChargeState_throwsException(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        mockChargeStateEndpoint_asleep(mockServerClient, id);
+
+        // When...
+        Throwable throwable = catchThrowable(() -> teslaClient.getChargeState());
+
+        // Then...
+        assertThat(throwable).isInstanceOf(HttpClientErrorException.class);
+        assertThat(((HttpClientErrorException) throwable).getStatusCode())
+                .isEqualTo(HttpStatus.REQUEST_TIMEOUT);
     }
 
     @Test
@@ -257,6 +279,22 @@ class TeslaClientTest {
                         "        \"usable_battery_level\": 85,\n" +
                         "        \"user_charge_enable_request\": null\n" +
                         "    }\n" +
+                        "}"));
+    }
+
+    private void mockChargeStateEndpoint_asleep(MockServerClient mockServerClient, Long id) {
+        mockServerClient.when(
+                request()
+                        .withMethod("GET")
+                        .withHeader("Authorization", "Bearer " + AUTH_TOKEN)
+                        .withPath("/api/1/vehicles/" + id + "/data_request/charge_state")
+        ).respond(response()
+                .withStatusCode(HttpStatusCode.REQUEST_TIMEOUT_408.code())
+                .withHeader("Content-Type", "application/json; charset=utf-8")
+                .withBody("{\n" +
+                        "    \"response\": null,\n" +
+                        "    \"error\": \"vehicle unavailable: {:error=>\\\"vehicle unavailable:\\\"}\",\n" +
+                        "    \"error_description\": \"\"\n" +
                         "}"));
     }
 }

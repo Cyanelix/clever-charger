@@ -33,12 +33,12 @@ class FlexibleOctopusTariffTest {
         ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-17T13:00Z");
 
         // When...
-        List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
+        List<PricedRatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
 
         // Then...
         assertThat(ratePeriods).hasSize(1);
 
-        RatePeriod ratePeriod = ratePeriods.get(0);
+        PricedRatePeriod ratePeriod = ratePeriods.get(0);
         assertThat(ratePeriod.getStart()).isEqualTo("2020-09-17T05:30:00Z");
         assertThat(ratePeriod.getEnd()).isEqualTo("2020-09-18T00:30:00Z");
         assertThat(ratePeriod.getPence()).isEqualTo(18.04f);
@@ -51,12 +51,12 @@ class FlexibleOctopusTariffTest {
         ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-18T00:30Z");
 
         // When...
-        List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
+        List<PricedRatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
 
         // Then...
         assertThat(ratePeriods).hasSize(2);
 
-        RatePeriod ratePeriod = ratePeriods.get(0);
+        PricedRatePeriod ratePeriod = ratePeriods.get(0);
         assertThat(ratePeriod.getStart()).isEqualTo("2020-09-17T00:30:00Z");
         assertThat(ratePeriod.getEnd()).isEqualTo("2020-09-17T05:30:00Z");
         assertThat(ratePeriod.getPence()).isEqualTo(9.38f);
@@ -74,12 +74,12 @@ class FlexibleOctopusTariffTest {
         ZonedDateTime toDateTime = ZonedDateTime.parse("2020-09-18T00:31Z");
 
         // When...
-        List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
+        List<PricedRatePeriod> ratePeriods = tariff.getRatePeriodsBetween(fromDateTime, toDateTime);
 
         // Then...
         assertThat(ratePeriods).hasSize(4);
 
-        RatePeriod ratePeriod = ratePeriods.get(0);
+        PricedRatePeriod ratePeriod = ratePeriods.get(0);
         assertThat(ratePeriod.getStart()).isEqualTo("2020-09-16T05:30:00Z");
         assertThat(ratePeriod.getEnd()).isEqualTo("2020-09-17T00:30:00Z");
         assertThat(ratePeriod.getPence()).isEqualTo(18.04f);

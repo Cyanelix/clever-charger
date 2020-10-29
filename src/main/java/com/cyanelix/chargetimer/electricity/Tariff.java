@@ -4,5 +4,5 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 public interface Tariff {
-    List<RatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to);
+    List<PricedRatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to);
 }

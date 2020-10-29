@@ -1,47 +1,43 @@
 @startuml
-[-> Scheduler: every ""n"" minutes
-activate Scheduler
+[-> ChargeController: chargeIfNeeded()
+activate ChargeController
+note right: every n minutes
 
-alt now > nextCheck
-    Scheduler -> ChargeController: chargeIfNeeded()
-    activate ChargeController
+ChargeController -> TeslaClient: getChargeState()
+activate TeslaClient
+ChargeController <-- TeslaClient: ChargeState
+deactivate TeslaClient
 
-    ChargeController -> TeslaClient: getChargeState()
-    activate TeslaClient
-    ChargeController <-- TeslaClient: ChargeState
-    deactivate TeslaClient
+alt pluggedIn
+    ChargeController -> RequiredCharges: getNextRequiredCharge()
+    activate RequiredCharges
+    ChargeController <-- RequiredCharges: RequiredCharge
+    deactivate RequiredCharges
 
-    alt pluggedIn
-        ChargeController -> RequiredCharges: getNextRequiredCharge()
-        activate RequiredCharges
-        ChargeController <-- RequiredCharges: RequiredCharge
-        deactivate RequiredCharges
+    ChargeController -> ChargeCalculator: getNextChargePeriod(RequiredCharge, ChargeLevel)
+    activate ChargeCalculator
 
-        ChargeController -> ChargeCalculator: needToCharge(RequiredCharge, ChargeState)
-        activate ChargeCalculator
+    ChargeCalculator -> Tariff: getRatePeriodsBetween(ZonedDateTime, ZonedDateTime)
+    activate Tariff
+    ChargeCalculator <-- Tariff: RatePeriod[]
+    deactivate Tariff
 
-        ChargeCalculator -> Tariff: getRatePeriodsUntil(Instant)
-        activate Tariff
-        ChargeCalculator <-- Tariff: RatePeriod[]
+    ChargeController <-- ChargeCalculator: RatePeriod
+    deactivate ChargeCalculator
 
-        ChargeController <-- ChargeCalculator: ChargePeriod
-        deactivate ChargeCalculator
-
-        alt chargePeriod.chargeNow && !charging
-            ChargeController -> TeslaClient: startCharge()
-            activate TeslaClient
-            ChargeController <-- TeslaClient: estimatedFinishTime
-            note right: estimatedFinishTime could inform time to next check?
-            deactivate TeslaClient
-        else !chargePeriod.chargeNow && charging
-            ChargeController -> TeslaClient: stopCharge()
-            activate TeslaClient
-            ChargeController <-- TeslaClient
-            deactivate TeslaClient
-        end
+    alt chargePeriod.chargeNow && !charging
+        ChargeController -> TeslaClient: startCharge()
+        activate TeslaClient
+        ChargeController <-- TeslaClient
+        deactivate TeslaClient
+    else !chargePeriod.chargeNow && charging
+        ChargeController -> TeslaClient: stopCharge()
+        activate TeslaClient
+        ChargeController <-- TeslaClient
+        deactivate TeslaClient
     end
-
-    Scheduler <-- ChargeController: nextCheck
-    note right: nextCheck could be the estimatedFinishTime, if we started charging, or the time ChargeCalculator\nsuggests for next starting charging
 end
+
+[<-- ChargeController
+deactivate ChargeController
 @enduml

@@ -81,6 +81,14 @@ public class TeslaClient {
         return chargeStateResponse.getBody().getChargeState();
     }
 
+    public void startCharging() {
+        // TODO
+    }
+
+    public void stopCharging() {
+        // TODO
+    }
+
     private HttpEntity<Void> createRequestEntity() {
         return createRequestEntity(null);
     }

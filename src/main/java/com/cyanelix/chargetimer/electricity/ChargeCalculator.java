@@ -25,38 +25,38 @@ public class ChargeCalculator {
         this.clock = clock;
     }
 
-    public ZonedDateTime getNextChargeStart(RequiredCharge requiredCharge, ChargeLevel currentCharge) {
-        if (currentCharge.exceeds(requiredCharge.getChargeLevel())) {
-            return null;
+    public RatePeriod getNextChargePeriod(RequiredCharge requiredCharge, ChargeLevel currentCharge) {
+        if (currentCharge.equalsOrExceeds(requiredCharge.getChargeLevel())) {
+            return RatePeriod.NULL_RATE_PERIOD;
         }
 
         int percentRequired = requiredCharge.getChargeLevel().getValue() - currentCharge.getValue();
         float numberOfSeconds = (percentRequired / PERCENT_PER_MINUTE) * 60f;
 
-        List<RatePeriod> ratePeriods = tariff.getRatePeriodsBetween(
+        List<PricedRatePeriod> ratePeriods = tariff.getRatePeriodsBetween(
                 ZonedDateTime.now(clock), requiredCharge.getRequiredBy());
 
         if (ratePeriods.size() == 0) {
-            return null;
+            return RatePeriod.NULL_RATE_PERIOD;
         }
 
         ratePeriods.sort(
-                Comparator.comparing(RatePeriod::getPence)
-                        .thenComparing(RatePeriod::getStart));
+                Comparator.comparing(PricedRatePeriod::getPence)
+                        .thenComparing(PricedRatePeriod::getStart));
 
-        List<RatePeriod> selectedPeriods = new ArrayList<>();
+        List<PricedRatePeriod> selectedPeriods = new ArrayList<>();
 
         while (totalSeconds(selectedPeriods) < (int) numberOfSeconds
                 && selectedPeriods.size() < ratePeriods.size()) {
             selectedPeriods = ratePeriods.subList(0, selectedPeriods.size() + 1);
         }
 
-        selectedPeriods.sort(Comparator.comparing(RatePeriod::getStart));
+        selectedPeriods.sort(Comparator.comparing(PricedRatePeriod::getStart));
 
-        return selectedPeriods.get(0).getStart();
+        return selectedPeriods.get(0);
     }
 
-    private long totalSeconds(List<RatePeriod> ratePeriods) {
+    private long totalSeconds(List<? extends RatePeriod> ratePeriods) {
         return ratePeriods.stream()
                 .map(RatePeriod::getSeconds)
                 .reduce(Long::sum)
