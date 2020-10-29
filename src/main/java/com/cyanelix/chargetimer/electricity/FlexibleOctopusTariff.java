@@ -57,7 +57,6 @@ public class FlexibleOctopusTariff implements Tariff {
                 .withNano(localTime.getNano());
     }
 
-    // TODO: Use and test this
     private PricedRatePeriod getNextRatePeriod(PricedRatePeriod previousRatePeriod) {
         ZonedDateTime previousEnd = previousRatePeriod.getEnd();
 

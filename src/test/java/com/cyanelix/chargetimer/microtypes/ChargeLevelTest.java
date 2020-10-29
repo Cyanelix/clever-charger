@@ -60,10 +60,10 @@ class ChargeLevelTest {
     @CsvSource({
             "100, 50, true",
             "50, 100, false",
-            "0, 0, false",
-            "100, 100, false"})
-    void testExceeds(int left, int right, boolean expectedResult) {
-        assertThat(ChargeLevel.of(left).exceeds(ChargeLevel.of(right)))
+            "0, 0, true",
+            "100, 100, true"})
+    void testEqualsOrExceeds(int left, int right, boolean expectedResult) {
+        assertThat(ChargeLevel.of(left).equalsOrExceeds(ChargeLevel.of(right)))
                 .isEqualTo(expectedResult);
     }
 }
