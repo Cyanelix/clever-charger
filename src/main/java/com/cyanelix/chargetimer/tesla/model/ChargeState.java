@@ -22,10 +22,6 @@ public class ChargeState {
         return chargingState.equals("Stopped");
     }
 
-    public boolean meets(RequiredCharge requiredCharge) {
-        return getChargeLevel().equalsOrExceeds(requiredCharge.getChargeLevel());
-    }
-
     public ChargeLevel getChargeLevel() {
         return ChargeLevel.of(batteryLevel);
     }

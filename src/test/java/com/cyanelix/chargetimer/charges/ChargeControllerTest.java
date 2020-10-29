@@ -180,4 +180,46 @@ class ChargeControllerTest {
         // Then...
         verify(teslaClient).stopCharging();
     }
+
+    @Test
+    void nextChargePeriodIsNullNotCharging_doNothing() {
+        // Given...
+        ChargeState chargeState = new ChargeState();
+        chargeState.setChargingState("Stopped");
+        given(teslaClient.getChargeState()).willReturn(chargeState);
+
+        RequiredCharge requiredCharge = RequiredCharge.of(
+                ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));
+        given(requiredChargesRepository.getNextRequiredCharge()).willReturn(requiredCharge);
+
+        given(chargeCalculator.getNextChargePeriod(any(RequiredCharge.class), any(ChargeLevel.class)))
+                .willReturn(RatePeriod.NULL_RATE_PERIOD);
+
+        // When...
+        chargeController.chargeIfNeeded();
+
+        // Then...
+        verifyNoMoreInteractions(teslaClient);
+    }
+
+    @Test
+    void nextChargePeriodIsNullIsCharging_doNothing() {
+        // Given...
+        ChargeState chargeState = new ChargeState();
+        chargeState.setChargingState("Charging");
+        given(teslaClient.getChargeState()).willReturn(chargeState);
+
+        RequiredCharge requiredCharge = RequiredCharge.of(
+                ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));
+        given(requiredChargesRepository.getNextRequiredCharge()).willReturn(requiredCharge);
+
+        given(chargeCalculator.getNextChargePeriod(any(RequiredCharge.class), any(ChargeLevel.class)))
+                .willReturn(RatePeriod.NULL_RATE_PERIOD);
+
+        // When...
+        chargeController.chargeIfNeeded();
+
+        // Then...
+        verify(teslaClient).stopCharging();
+    }
 }
