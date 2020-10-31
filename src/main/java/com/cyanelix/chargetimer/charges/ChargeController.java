@@ -44,6 +44,8 @@ public class ChargeController {
             return;
         }
 
+        teslaClient.setChargeLimit(nextRequiredCharge.getChargeLevel());
+
         RatePeriod nextChargePeriod = chargeCalculator.getNextChargePeriod(
                 nextRequiredCharge, chargeState.getChargeLevel());
 

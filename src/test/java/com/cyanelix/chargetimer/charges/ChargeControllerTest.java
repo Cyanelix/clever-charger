@@ -114,6 +114,7 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verifyNoMoreInteractions(teslaClient);
     }
 
@@ -136,6 +137,7 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verify(teslaClient).startCharging();
     }
 
@@ -157,6 +159,7 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verifyNoMoreInteractions(teslaClient);
     }
 
@@ -178,6 +181,7 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verify(teslaClient).stopCharging();
     }
 
@@ -199,11 +203,12 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verifyNoMoreInteractions(teslaClient);
     }
 
     @Test
-    void nextChargePeriodIsNullIsCharging_doNothing() {
+    void nextChargePeriodIsNullIsCharging_stop() {
         // Given...
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Charging");
@@ -220,6 +225,7 @@ class ChargeControllerTest {
         chargeController.chargeIfNeeded();
 
         // Then...
+        verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
         verify(teslaClient).stopCharging();
     }
 }

@@ -1,6 +1,7 @@
 package com.cyanelix.chargetimer.tesla;
 
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
+import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.tesla.model.*;
 import com.cyanelix.chargetimer.tesla.exception.TeslaClientException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,6 +87,10 @@ public class TeslaClient {
     }
 
     public void stopCharging() {
+        // TODO
+    }
+
+    public void setChargeLimit(ChargeLevel chargeLevel) {
         // TODO
     }
 
