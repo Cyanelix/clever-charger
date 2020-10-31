@@ -3,7 +3,6 @@ package com.cyanelix.chargetimer.tesla;
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.tesla.model.ChargeState;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.client.MockServerClient;

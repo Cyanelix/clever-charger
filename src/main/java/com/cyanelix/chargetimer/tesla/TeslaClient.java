@@ -25,6 +25,37 @@ public class TeslaClient {
         this.teslaApiCache = teslaApiCache;
     }
 
+    public ChargeState getChargeState() {
+        if (!teslaApiCache.hasId()) {
+            teslaApiCache.setId(getIdFromVin());
+        }
+
+        HttpEntity<Void> requestEntity = createRequestEntity();
+
+        ResponseEntity<ChargeStateResponse> chargeStateResponse = restTemplate.exchange(
+                teslaClientConfig.getBaseUrl() + "/api/1/vehicles/{id}/data_request/charge_state",
+                HttpMethod.GET, requestEntity, ChargeStateResponse.class, teslaApiCache.getId());
+
+        if (chargeStateResponse.getBody() == null) {
+            throw new TeslaClientException(
+                    "No response received from charge_state endpoint on the Tesla API");
+        }
+
+        return chargeStateResponse.getBody().getChargeState();
+    }
+
+    public void startCharging() {
+        // TODO
+    }
+
+    public void stopCharging() {
+        // TODO
+    }
+
+    public void setChargeLimit(ChargeLevel chargeLevel) {
+        // TODO
+    }
+
     private String getAuthToken() {
         AccessTokenRequest accessTokenRequest = new AccessTokenRequest(
                 teslaClientConfig.getClientId(),
@@ -61,37 +92,6 @@ public class TeslaClient {
                 .findAny()
                 .map(Vehicle::getId)
                 .orElseThrow(() -> new TeslaClientException("No vehicle with matching VIN found"));
-    }
-
-    public ChargeState getChargeState() {
-        if (!teslaApiCache.hasId()) {
-            teslaApiCache.setId(getIdFromVin());
-        }
-
-        HttpEntity<Void> requestEntity = createRequestEntity();
-
-        ResponseEntity<ChargeStateResponse> chargeStateResponse = restTemplate.exchange(
-                teslaClientConfig.getBaseUrl() + "/api/1/vehicles/{id}/data_request/charge_state",
-                HttpMethod.GET, requestEntity, ChargeStateResponse.class, teslaApiCache.getId());
-
-        if (chargeStateResponse.getBody() == null) {
-            throw new TeslaClientException(
-                    "No response received from charge_state endpoint on the Tesla API");
-        }
-
-        return chargeStateResponse.getBody().getChargeState();
-    }
-
-    public void startCharging() {
-        // TODO
-    }
-
-    public void stopCharging() {
-        // TODO
-    }
-
-    public void setChargeLimit(ChargeLevel chargeLevel) {
-        // TODO
     }
 
     private HttpEntity<Void> createRequestEntity() {
