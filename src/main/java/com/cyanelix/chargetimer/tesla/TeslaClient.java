@@ -2,14 +2,16 @@ package com.cyanelix.chargetimer.tesla;
 
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
-import com.cyanelix.chargetimer.tesla.model.*;
 import com.cyanelix.chargetimer.tesla.exception.TeslaClientException;
+import com.cyanelix.chargetimer.tesla.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Component
@@ -26,34 +28,56 @@ public class TeslaClient {
     }
 
     public ChargeState getChargeState() {
+        ChargeStateResponse response = makeRequest(createRequestEntity(),
+                "/api/1/vehicles/{id}/data_request/charge_state", HttpMethod.GET,
+                ChargeStateResponse.class);
+
+        return response.getChargeState();
+    }
+
+    public boolean startCharging() {
+        CommonResponse response = makeRequest(createRequestEntity(),
+                "/api/1/vehicles/{id}/command/charge_start", HttpMethod.POST,
+                CommonResponse.class);
+
+        return response.getResult();
+    }
+
+    public boolean stopCharging() {
+        CommonResponse response = makeRequest(createRequestEntity(),
+                "/api/1/vehicles/{id}/command/charge_stop", HttpMethod.POST,
+                CommonResponse.class);
+
+        return response.getResult();
+    }
+
+    public boolean setChargeLimit(ChargeLevel chargeLevel) {
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.set("percent", Integer.toString(chargeLevel.getValue()));
+
+        CommonResponse response = makeRequest(createRequestEntity(body),
+                "/api/1/vehicles/{id}/command/set_charge_limit", HttpMethod.POST,
+                CommonResponse.class);
+
+        return response.getResult();
+    }
+
+    private <B, R> R makeRequest(HttpEntity<B> requestEntity, String endpoint,
+                                 HttpMethod method, Class<R> responseType) {
         if (!teslaApiCache.hasId()) {
             teslaApiCache.setId(getIdFromVin());
         }
 
-        HttpEntity<Void> requestEntity = createRequestEntity();
+        ResponseEntity<R> response = restTemplate.exchange(
+                teslaClientConfig.getBaseUrl() + endpoint, method,
+                requestEntity, responseType, teslaApiCache.getId());
 
-        ResponseEntity<ChargeStateResponse> chargeStateResponse = restTemplate.exchange(
-                teslaClientConfig.getBaseUrl() + "/api/1/vehicles/{id}/data_request/charge_state",
-                HttpMethod.GET, requestEntity, ChargeStateResponse.class, teslaApiCache.getId());
-
-        if (chargeStateResponse.getBody() == null) {
-            throw new TeslaClientException(
-                    "No response received from charge_state endpoint on the Tesla API");
+        R body = response.getBody();
+        if (body == null) {
+            throw new TeslaClientException("No response received from endpoint on the Tesla API");
         }
 
-        return chargeStateResponse.getBody().getChargeState();
-    }
-
-    public void startCharging() {
-        // TODO
-    }
-
-    public void stopCharging() {
-        // TODO
-    }
-
-    public void setChargeLimit(ChargeLevel chargeLevel) {
-        // TODO
+        return body;
     }
 
     private String getAuthToken() {

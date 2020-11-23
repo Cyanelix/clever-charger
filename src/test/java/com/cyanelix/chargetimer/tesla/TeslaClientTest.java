@@ -1,6 +1,7 @@
 package com.cyanelix.chargetimer.tesla;
 
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
+import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.tesla.model.ChargeState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 import org.mockserver.verify.VerificationTimes;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 import static org.mockserver.model.JsonBody.json;
+import static org.mockserver.model.Parameter.param;
+import static org.mockserver.model.ParameterBody.params;
 
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {8787})
@@ -156,6 +160,74 @@ class TeslaClientTest {
                 request().withPath("/oauth/token"), VerificationTimes.once());
         mockServerClient.verify(
                 request().withPath("/api/1/vehicles"), VerificationTimes.once());
+    }
+
+    @Test
+    void authAndIdCached_startCharging_success(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        mockStartChargingEndpoint_success(mockServerClient, id);
+
+        // When...
+        teslaClient.startCharging();
+
+        // Then...
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles/" + id + "/command/charge_start"), VerificationTimes.once());
+    }
+
+    @Test
+    void authAndIdCached_stopCharging_success(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        mockStopChargingEndpoint_success(mockServerClient, id);
+
+        // When...
+        teslaClient.stopCharging();
+
+        // Then...
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles/" + id + "/command/charge_stop"), VerificationTimes.once());
+    }
+
+    @Test
+    void authAndIdCached_setChargeLimit_success(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+
+        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        mockSetChargeLimitEndpoint_success(mockServerClient, 90, id);
+
+        // When...
+        teslaClient.setChargeLimit(ChargeLevel.of(90));
+
+        // Then...
+        mockServerClient.verify(
+                request().withPath("/oauth/token"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles"), VerificationTimes.exactly(0));
+        mockServerClient.verify(
+                request().withPath("/api/1/vehicles/" + id + "/command/set_charge_limit"));
+        mockServerClient.verify(
+                request().withBody(params(param("percent", "90"))));
     }
 
     private void mockAuthTokenEndpoint(MockServerClient mockServerClient) {
@@ -295,5 +367,44 @@ class TeslaClientTest {
                         "    \"error\": \"vehicle unavailable: {:error=>\\\"vehicle unavailable:\\\"}\",\n" +
                         "    \"error_description\": \"\"\n" +
                         "}"));
+    }
+
+    private void mockStartChargingEndpoint_success(MockServerClient mockServerClient, Long id) {
+        mockEmptyCommandSuccess(mockServerClient, id, "charge_start");
+    }
+
+    private void mockStopChargingEndpoint_success(MockServerClient mockServerClient, Long id) {
+        mockEmptyCommandSuccess(mockServerClient, id, "charge_stop");
+    }
+
+    private void mockEmptyCommandSuccess(MockServerClient mockServerClient, Long id, String command) {
+        mockServerClient.when(
+                request()
+                        .withMethod("POST")
+                        .withHeader("Authorization", "Bearer " + AUTH_TOKEN)
+                        .withPath("/api/1/vehicles/" + id + "/command/" + command)
+        ).respond(successResponse());
+    }
+
+    private void mockSetChargeLimitEndpoint_success(MockServerClient mockServerClient,
+                                                    int expectedPercentage, Long id) {
+        mockServerClient.when(
+                request()
+                        .withMethod("POST")
+                        .withBody(params(param("percent", Integer.toString(expectedPercentage))))
+                        .withPath("/api/1/vehicles/" + id + "/command/set_charge_limit")
+        ).respond(successResponse());
+    }
+
+    private HttpResponse successResponse() {
+        return response()
+                .withStatusCode(HttpStatusCode.OK_200.code())
+                .withHeader("Content-Type", "application/json; charset=utf-8")
+                .withBody("{\n" +
+                        "    \"response\": {\n" +
+                        "        \"reason\": \"\",\n" +
+                        "        \"result\": true\n" +
+                        "    }" +
+                        "}");
     }
 }
