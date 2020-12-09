@@ -7,6 +7,7 @@ import com.cyanelix.chargetimer.electricity.ChargeCalculator;
 import com.cyanelix.chargetimer.electricity.FlexibleOctopusTariff;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.microtypes.RequiredCharge;
+import com.cyanelix.chargetimer.microtypes.WeeklyTime;
 import com.cyanelix.chargetimer.tesla.TeslaApiCache;
 import com.cyanelix.chargetimer.tesla.TeslaClient;
 import com.cyanelix.chargetimer.testutil.MockRequest;
@@ -35,6 +36,7 @@ public class IntegrationTests {
     private static final ZonedDateTime SIX_AM = ZonedDateTime.parse("2020-01-01T06:00:00Z");
     private static final ZonedDateTime SIX_AM_TOMORROW = ZonedDateTime.parse("2020-01-02T06:00:00Z");
 
+    // Start tests at 0100 on 01/01/2020 (a Wednesday)
     private final MutableClock clock = new MutableClock(
             Clock.fixed(Instant.parse("2020-01-01T01:00:00Z"), UTC));
 
@@ -84,15 +86,15 @@ public class IntegrationTests {
 
     @Test
     void needToCharge_couldChargeInOnePeriodButCheaperInTwo_chooseCheapestOption(MockServerClient mockServerClient) {
-        MockServerUtil.mockVehiclesEndpoint(mockServerClient, VEHICLE_ID, VIN);
-        MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 10, "Stopped");
         MockServerUtil.mockSetChargeLimitEndpoint(mockServerClient, VEHICLE_ID);
         MockServerUtil.mockStartChargeEndpoint(mockServerClient, VEHICLE_ID);
         MockServerUtil.mockStopChargeEndpoint(mockServerClient, VEHICLE_ID);
 
+        // Need 90% by 0600 tomorrow.
         requiredChargesRepository.addException(RequiredCharge.of(ChargeLevel.of(90), SIX_AM_TOMORROW));
 
-        // TODO: Do I need to assert that these verifies happen in order? And/or should I reset the mockServerClient after each change in time?
+        // Currently have 10%, will need 2 overnight charging sessions.
+        MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 10, "Stopped");
 
         // Call chargeIfNeeded at 0100 on day 1; should start charging - currently night rate.
         chargeController.chargeIfNeeded();
@@ -109,6 +111,44 @@ public class IntegrationTests {
         MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 80, "Stopped");
         clock.setClock(Clock.fixed(Instant.parse("2020-01-02T00:31:00Z"), UTC));
         chargeController.chargeIfNeeded();
+        mockServerClient.verify(MockRequest.setChargeLimit(VEHICLE_ID, 90));
+        mockServerClient.verify(MockRequest.startCharging(VEHICLE_ID));
+    }
+
+    @Test
+    void needToCharge_notEnoughTimeToReachTarget_startCharging(MockServerClient mockServerClient) {
+        MockServerUtil.mockSetChargeLimitEndpoint(mockServerClient, VEHICLE_ID);
+        MockServerUtil.mockStartChargeEndpoint(mockServerClient, VEHICLE_ID);
+
+        // Currently have 10% battery
+        MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 10, "Stopped");
+
+        // Need 90% in 4.5 hours time (not long enough)
+        requiredChargesRepository.addException(RequiredCharge.of(ChargeLevel.of(90), SIX_AM));
+
+        chargeController.chargeIfNeeded();
+
+        mockServerClient.verify(MockRequest.setChargeLimit(VEHICLE_ID, 90));
+        mockServerClient.verify(MockRequest.startCharging(VEHICLE_ID));
+    }
+
+    @Test
+    void scheduledForTomorrowWithExceptionForToday_startCharging(MockServerClient mockServerClient) {
+        MockServerUtil.mockSetChargeLimitEndpoint(mockServerClient, VEHICLE_ID);
+        MockServerUtil.mockStartChargeEndpoint(mockServerClient, VEHICLE_ID);
+
+        // Schedule a charge for Thursday (tomorrow)
+        requiredChargesRepository.addWeekly(
+                new WeeklyTime(DayOfWeek.THURSDAY, LocalTime.NOON), ChargeLevel.of(70));
+
+        // Add an exception for today
+        requiredChargesRepository.addException(RequiredCharge.of(ChargeLevel.of(90), SIX_AM));
+
+        // Currently have 80% (i.e. don't need to charge for schedule, but do need to for the exception)
+        MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 80, "Stopped");
+
+        chargeController.chargeIfNeeded();
+
         mockServerClient.verify(MockRequest.setChargeLimit(VEHICLE_ID, 90));
         mockServerClient.verify(MockRequest.startCharging(VEHICLE_ID));
     }
