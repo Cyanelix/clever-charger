@@ -153,6 +153,24 @@ public class IntegrationTests {
         mockServerClient.verify(MockRequest.startCharging(VEHICLE_ID));
     }
 
+    @Test
+    void scheduledForTomorrowWithNoException_startCharging(MockServerClient mockServerClient) {
+        MockServerUtil.mockSetChargeLimitEndpoint(mockServerClient, VEHICLE_ID);
+        MockServerUtil.mockStartChargeEndpoint(mockServerClient, VEHICLE_ID);
+
+        // Schedule a charge for Thursday (tomorrow)
+        requiredChargesRepository.addWeekly(
+                new WeeklyTime(DayOfWeek.THURSDAY, LocalTime.NOON), ChargeLevel.of(70));
+
+        // Currently have 65% (i.e. don't need to charge today, but will need to tomorrow)
+        MockServerUtil.mockChargeStateEndpoint(mockServerClient, VEHICLE_ID, 65, "Stopped");
+
+        // Run chargeIfNeeded on day 1; expect charging to start
+        chargeController.chargeIfNeeded();
+        mockServerClient.verify(MockRequest.setChargeLimit(VEHICLE_ID, 70));
+        mockServerClient.verify(MockRequest.startCharging(VEHICLE_ID));
+    }
+
     private void verifyNoChangeToCharging(MockServerClient mockServerClient) {
         mockServerClient.verify(
                 MockRequest.startCharging(VEHICLE_ID), VerificationTimes.exactly(0));
