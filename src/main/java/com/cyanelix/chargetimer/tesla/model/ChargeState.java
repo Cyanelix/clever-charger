@@ -1,7 +1,6 @@
 package com.cyanelix.chargetimer.tesla.model;
 
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
-import com.cyanelix.chargetimer.microtypes.RequiredCharge;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
@@ -40,5 +39,14 @@ public class ChargeState {
 
     public void setChargingState(String chargingState) {
         this.chargingState = chargingState;
+    }
+
+    public boolean isFullyCharged() {
+        return batteryLevel > 99;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%%; %s", batteryLevel, chargingState);
     }
 }

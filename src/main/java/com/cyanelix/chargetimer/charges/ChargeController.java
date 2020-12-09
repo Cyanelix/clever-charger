@@ -33,7 +33,7 @@ public class ChargeController {
     // TODO: need to schedule this
     public void chargeIfNeeded() {
         ChargeState chargeState = getChargeState();
-        if (chargeState == null || chargeState.isUnplugged()) {
+        if (chargeState == null || chargeState.isUnplugged() || chargeState.isFullyCharged()) {
             // Car's out of range or unplugged; nothing we can do for now.
             return;
         }
@@ -44,12 +44,11 @@ public class ChargeController {
             return;
         }
 
-        teslaClient.setChargeLimit(nextRequiredCharge.getChargeLevel());
-
         RatePeriod nextChargePeriod = chargeCalculator.getNextChargePeriod(
                 nextRequiredCharge, chargeState.getChargeLevel());
 
         if (nextChargePeriod.chargeNow(clock) && chargeState.isReadyToCharge()) {
+            teslaClient.setChargeLimit(nextRequiredCharge.getChargeLevel());
             teslaClient.startCharging();
         } else if (!nextChargePeriod.chargeNow(clock) && chargeState.isCharging()) {
             teslaClient.stopCharging();

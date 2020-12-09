@@ -37,4 +37,9 @@ public final class RequiredCharge {
     public int hashCode() {
         return Objects.hash(chargeLevel, requiredBy);
     }
+
+    @Override
+    public String toString() {
+        return String.format("Requiring %s @ %s", chargeLevel, requiredBy);
+    }
 }
