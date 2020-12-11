@@ -5,26 +5,23 @@ import com.cyanelix.chargetimer.electricity.RatePeriod;
 import com.cyanelix.chargetimer.microtypes.RequiredCharge;
 import com.cyanelix.chargetimer.tesla.TeslaClient;
 import com.cyanelix.chargetimer.tesla.model.ChargeState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Clock;
 
 @Component
 public class ChargeController {
-    private final static Logger LOG = LoggerFactory.getLogger(ChargeController.class);
-
     private final TeslaClient teslaClient;
+    private final ChargeStateService chargeStateService;
     private final RequiredChargesRepository requiredChargesRepository;
     private final ChargeCalculator chargeCalculator;
     private final Clock clock;
 
     @Autowired
-    public ChargeController(TeslaClient teslaClient, RequiredChargesRepository requiredChargesRepository, ChargeCalculator chargeCalculator, Clock clock) {
+    public ChargeController(TeslaClient teslaClient, ChargeStateService chargeStateService, RequiredChargesRepository requiredChargesRepository, ChargeCalculator chargeCalculator, Clock clock) {
         this.teslaClient = teslaClient;
+        this.chargeStateService = chargeStateService;
         this.requiredChargesRepository = requiredChargesRepository;
         this.chargeCalculator = chargeCalculator;
         this.clock = clock;
@@ -32,9 +29,9 @@ public class ChargeController {
 
     // TODO: need to schedule this
     public void chargeIfNeeded() {
-        ChargeState chargeState = getChargeState();
-        if (chargeState == null || chargeState.isUnplugged() || chargeState.isFullyCharged()) {
-            // Car's out of range or unplugged; nothing we can do for now.
+        ChargeState chargeState = chargeStateService.getChargeState();
+        if (chargeState.isUnplugged() || chargeState.isFullyCharged()) {
+            // Car's unplugged or full; nothing we can do for now.
             return;
         }
 
@@ -47,21 +44,12 @@ public class ChargeController {
         RatePeriod nextChargePeriod = chargeCalculator.getNextChargePeriod(
                 nextRequiredCharge, chargeState.getChargeLevel());
 
+        // TODO: Might need to wake up the car in either of these cases.
         if (nextChargePeriod.chargeNow(clock) && chargeState.isReadyToCharge()) {
             teslaClient.setChargeLimit(nextRequiredCharge.getChargeLevel());
             teslaClient.startCharging();
         } else if (!nextChargePeriod.chargeNow(clock) && chargeState.isCharging()) {
             teslaClient.stopCharging();
         }
-    }
-
-    private ChargeState getChargeState() {
-        try {
-            return teslaClient.getChargeState();
-        } catch (HttpClientErrorException ex) {
-            LOG.warn("Client error when requesting charge state", ex);
-        }
-
-        return null;
     }
 }

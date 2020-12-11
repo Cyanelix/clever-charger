@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -34,6 +32,9 @@ class ChargeControllerTest {
     private TeslaClient teslaClient;
 
     @Mock
+    private ChargeStateService chargeStateService;
+
+    @Mock
     private RequiredChargesRepository requiredChargesRepository;
 
     @Mock
@@ -43,22 +44,7 @@ class ChargeControllerTest {
 
     @BeforeEach
     void setUp() {
-        chargeController = new ChargeController(teslaClient, requiredChargesRepository, chargeCalculator, clock);
-    }
-
-    @Test
-    void chargeStateUnavailable_doNothing() {
-        // Given...
-        given(teslaClient.getChargeState())
-                .willThrow(new HttpClientErrorException(HttpStatus.REQUEST_TIMEOUT));
-
-        // When...
-        chargeController.chargeIfNeeded();
-
-        // Then...
-        verifyNoInteractions(requiredChargesRepository);
-        verifyNoInteractions(chargeCalculator);
-        verifyNoMoreInteractions(teslaClient);
+        chargeController = new ChargeController(teslaClient, chargeStateService, requiredChargesRepository, chargeCalculator, clock);
     }
 
     @Test
@@ -67,7 +53,7 @@ class ChargeControllerTest {
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Disconnected");
 
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         // When...
         chargeController.chargeIfNeeded();
@@ -84,7 +70,7 @@ class ChargeControllerTest {
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Stopped");
 
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
         given(requiredChargesRepository.getNextRequiredCharge()).willReturn(null);
 
         // When...
@@ -100,7 +86,7 @@ class ChargeControllerTest {
         // Given...
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Charging");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T11:00Z"));
@@ -122,7 +108,7 @@ class ChargeControllerTest {
         // Given...
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Stopped");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T11:00Z"));
@@ -144,7 +130,7 @@ class ChargeControllerTest {
     void nextChargeStartInFutureNotCharging_doNothing() {
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Stopped");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));
@@ -165,7 +151,7 @@ class ChargeControllerTest {
     void nextChargeStartInFutureCharging_stopCharging() {
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Charging");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));
@@ -187,7 +173,7 @@ class ChargeControllerTest {
         // Given...
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Stopped");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));
@@ -208,7 +194,7 @@ class ChargeControllerTest {
         // Given...
         ChargeState chargeState = new ChargeState();
         chargeState.setChargingState("Charging");
-        given(teslaClient.getChargeState()).willReturn(chargeState);
+        given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         RequiredCharge requiredCharge = RequiredCharge.of(
                 ChargeLevel.of(100), ZonedDateTime.parse("2020-01-01T13:00Z"));

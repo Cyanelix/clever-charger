@@ -1,6 +1,7 @@
 package com.cyanelix.chargetimer.integration;
 
 import com.cyanelix.chargetimer.charges.ChargeController;
+import com.cyanelix.chargetimer.charges.ChargeStateService;
 import com.cyanelix.chargetimer.charges.RequiredChargesRepository;
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.electricity.ChargeCalculator;
@@ -60,7 +61,9 @@ public class IntegrationTests {
 
         TeslaClient teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig, teslaApiCache);
 
-        chargeController = new ChargeController(teslaClient, requiredChargesRepository, chargeCalculator, clock);
+        ChargeStateService chargeStateService = new ChargeStateService(teslaClient);
+
+        chargeController = new ChargeController(teslaClient, chargeStateService, requiredChargesRepository, chargeCalculator, clock);
 
         MockServerUtil.mockVehiclesEndpoint(mockServerClient, VEHICLE_ID, VIN);
     }
