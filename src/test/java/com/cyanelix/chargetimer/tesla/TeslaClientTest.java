@@ -3,6 +3,7 @@ package com.cyanelix.chargetimer.tesla;
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.tesla.model.ChargeState;
+import com.cyanelix.chargetimer.testutil.MockRequest;
 import com.cyanelix.chargetimer.testutil.MockServerUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import static com.cyanelix.chargetimer.testutil.MockServerUtil.AUTH_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.BDDMockito.given;
@@ -42,6 +42,7 @@ class TeslaClientTest {
 
         teslaClientConfig = mock(TeslaClientConfig.class);
         given(teslaClientConfig.getBaseUrl()).willReturn("http://localhost:8787");
+        given(teslaClientConfig.getWakeUpWaitSeconds()).willReturn(2);
 
         teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig, teslaApiCache);
     }
@@ -51,10 +52,10 @@ class TeslaClientTest {
         // Given...
         Long id = 123L;
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(id);
 
-        mockChargeStateEndpoint_asleep(mockServerClient, id);
+        MockServerUtil.mockChargeStateEndpointAsleep(mockServerClient, id);
 
         // When...
         Throwable throwable = catchThrowable(() -> teslaClient.getChargeState());
@@ -71,7 +72,7 @@ class TeslaClientTest {
         Long id = 123L;
         int expectedBatteryLevel = 100;
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(id);
 
         MockServerUtil.mockChargeStateEndpoint(mockServerClient, id, expectedBatteryLevel, "Stopped");
@@ -120,7 +121,7 @@ class TeslaClientTest {
         String vin = "DUMMY-VIN";
         given(teslaClientConfig.getVin()).willReturn(vin);
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
 
         MockServerUtil.mockVehiclesEndpoint(mockServerClient, id, vin);
         MockServerUtil.mockChargeStateEndpoint(mockServerClient, id, expectedBatteryLevel, "Stopped");
@@ -167,7 +168,7 @@ class TeslaClientTest {
         // Given...
         Long id = 123L;
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(id);
 
         mockStartChargingEndpoint_success(mockServerClient, id);
@@ -189,7 +190,7 @@ class TeslaClientTest {
         // Given...
         Long id = 123L;
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(id);
 
         mockStopChargingEndpoint_success(mockServerClient, id);
@@ -207,11 +208,42 @@ class TeslaClientTest {
     }
 
     @Test
+    void authAndIdCached_sleeping_setChargeLimit_wakesSuccessfully(MockServerClient mockServerClient) {
+        // Given...
+        Long id = 123L;
+
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
+        teslaApiCache.setId(id);
+
+        // The car is initially asleep
+        MockServerUtil.mockSetChargeLimitEndpointAsleep(mockServerClient, id);
+        MockServerUtil.mockWakeEndpoint(mockServerClient, id, "asleep");
+
+        // But then wakes up
+        MockServerUtil.mockWakeEndpoint(mockServerClient, id, "online");
+        MockServerUtil.mockSetChargeLimitEndpoint(mockServerClient, id);
+
+        // When...
+        teslaClient.setChargeLimit(ChargeLevel.of(90));
+
+        // Then...
+        mockServerClient.verify(
+                request()
+                        .withPath("/api/1/vehicles/" + id + "/command/set_charge_limit")
+                        .withBody(params(param("percent", "90"))),
+                request().withPath("/api/1/vehicles/" + id + "/wake_up"),
+                request().withPath("/api/1/vehicles/" + id + "/wake_up"),
+                request()
+                        .withPath("/api/1/vehicles/" + id + "/command/set_charge_limit")
+                        .withBody(params(param("percent", "90"))));
+    }
+
+    @Test
     void authAndIdCached_setChargeLimit_success(MockServerClient mockServerClient) {
         // Given...
         Long id = 123L;
 
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(id);
 
         mockSetChargeLimitEndpoint_success(mockServerClient, 90, id);
@@ -254,29 +286,13 @@ class TeslaClientTest {
                 .withStatusCode(HttpStatusCode.OK_200.code())
                 .withHeader("Content-Type", "application/json; charset=utf-8")
                 .withBody("{\n" +
-                        "    \"access_token\": \"" + AUTH_TOKEN + "\",\n" +
+                        "    \"access_token\": \"" + MockRequest.AUTH_TOKEN + "\",\n" +
                         "    \"token_type\": \"bearer\",\n" +
                         "    \"expires_in\": 3888000,\n" +
                         "    \"refresh_token\": \"refresh-token\",\n" +
                         "    \"created_at\": 1593297025\n" +
                         "}")
         );
-    }
-
-    private void mockChargeStateEndpoint_asleep(MockServerClient mockServerClient, Long id) {
-        mockServerClient.when(
-                request()
-                        .withMethod("GET")
-                        .withHeader("Authorization", "Bearer " + AUTH_TOKEN)
-                        .withPath("/api/1/vehicles/" + id + "/data_request/charge_state")
-        ).respond(response()
-                .withStatusCode(HttpStatusCode.REQUEST_TIMEOUT_408.code())
-                .withHeader("Content-Type", "application/json; charset=utf-8")
-                .withBody("{\n" +
-                        "    \"response\": null,\n" +
-                        "    \"error\": \"vehicle unavailable: {:error=>\\\"vehicle unavailable:\\\"}\",\n" +
-                        "    \"error_description\": \"\"\n" +
-                        "}"));
     }
 
     private void mockStartChargingEndpoint_success(MockServerClient mockServerClient, Long id) {
@@ -291,7 +307,7 @@ class TeslaClientTest {
         mockServerClient.when(
                 request()
                         .withMethod("POST")
-                        .withHeader("Authorization", "Bearer " + AUTH_TOKEN)
+                        .withHeader("Authorization", "Bearer " + MockRequest.AUTH_TOKEN)
                         .withPath("/api/1/vehicles/" + id + "/command/" + command)
         ).respond(successResponse());
     }

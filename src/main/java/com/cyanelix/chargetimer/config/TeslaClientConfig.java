@@ -12,6 +12,7 @@ public class TeslaClientConfig {
     private String email;
     private String password;
     private String vin;
+    private int wakeUpWaitSeconds;
 
     public String getBaseUrl() {
         return baseUrl;
@@ -59,5 +60,13 @@ public class TeslaClientConfig {
 
     public void setVin(String vin) {
         this.vin = vin;
+    }
+
+    public int getWakeUpWaitSeconds() {
+        return wakeUpWaitSeconds;
+    }
+
+    public void setWakeUpWaitSeconds(int wakeUpWaitSeconds) {
+        this.wakeUpWaitSeconds = wakeUpWaitSeconds;
     }
 }

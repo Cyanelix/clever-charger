@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 public class Vehicle {
     private Long id;
     private String vin;
+    private String state;
 
     public Long getId() {
         return id;
@@ -22,5 +23,13 @@ public class Vehicle {
 
     public void setVin(String vin) {
         this.vin = vin;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

@@ -25,8 +25,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.*;
 
-import static com.cyanelix.chargetimer.testutil.MockServerUtil.AUTH_TOKEN;
-
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {8787})
 public class IntegrationTests {
@@ -56,7 +54,7 @@ public class IntegrationTests {
         teslaClientConfig.setVin(VIN);
 
         TeslaApiCache teslaApiCache = new TeslaApiCache();
-        teslaApiCache.setAuthToken(AUTH_TOKEN);
+        teslaApiCache.setAuthToken(MockRequest.AUTH_TOKEN);
         teslaApiCache.setId(VEHICLE_ID);
 
         TeslaClient teslaClient = new TeslaClient(new RestTemplate(), teslaClientConfig, teslaApiCache);
