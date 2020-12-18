@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ChargeControllerTest {
+class ChargeSchedulerTest {
     private final Clock clock = Clock.fixed(Instant.parse("2020-01-01T12:00:00Z"), ZoneId.of("UTC"));
 
     @Mock
@@ -40,11 +40,11 @@ class ChargeControllerTest {
     @Mock
     private ChargeCalculator chargeCalculator;
 
-    private ChargeController chargeController;
+    private ChargeScheduler chargeScheduler;
 
     @BeforeEach
     void setUp() {
-        chargeController = new ChargeController(teslaClient, chargeStateService, requiredChargesRepository, chargeCalculator, clock);
+        chargeScheduler = new ChargeScheduler(teslaClient, chargeStateService, requiredChargesRepository, chargeCalculator, clock);
     }
 
     @Test
@@ -56,7 +56,7 @@ class ChargeControllerTest {
         given(chargeStateService.getChargeState()).willReturn(chargeState);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verifyNoInteractions(requiredChargesRepository);
@@ -74,7 +74,7 @@ class ChargeControllerTest {
         given(requiredChargesRepository.getNextRequiredCharge()).willReturn(null);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verifyNoInteractions(chargeCalculator);
@@ -97,7 +97,7 @@ class ChargeControllerTest {
                 .willReturn(mockRatePeriod);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verifyNoMoreInteractions(teslaClient);
@@ -119,7 +119,7 @@ class ChargeControllerTest {
                 .willReturn(mockRatePeriod);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verify(teslaClient).setChargeLimit(ChargeLevel.of(100));
@@ -141,7 +141,7 @@ class ChargeControllerTest {
                 .willReturn(mockRatePeriod);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verifyNoMoreInteractions(teslaClient);
@@ -162,7 +162,7 @@ class ChargeControllerTest {
                 .willReturn(mockRatePeriod);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verify(teslaClient).stopCharging();
@@ -183,7 +183,7 @@ class ChargeControllerTest {
                 .willReturn(RatePeriod.NULL_RATE_PERIOD);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verifyNoMoreInteractions(teslaClient);
@@ -204,7 +204,7 @@ class ChargeControllerTest {
                 .willReturn(RatePeriod.NULL_RATE_PERIOD);
 
         // When...
-        chargeController.chargeIfNeeded();
+        chargeScheduler.chargeIfNeeded();
 
         // Then...
         verify(teslaClient).stopCharging();

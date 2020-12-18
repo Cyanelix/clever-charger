@@ -3,19 +3,21 @@ package com.cyanelix.chargetimer.controller;
 import com.cyanelix.chargetimer.tesla.TeslaClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class TestController {
+@RequestMapping(path = "state")
+public class StateController {
     private final TeslaClient teslaClient;
 
     @Autowired
-    public TestController(TeslaClient teslaClient) {
+    public StateController(TeslaClient teslaClient) {
         this.teslaClient = teslaClient;
     }
 
-    @GetMapping("test")
-    public String test() {
+    @GetMapping("charge")
+    public String getChargeState() {
         return Integer.toString(teslaClient.getChargeState().getBatteryLevel());
     }
 }

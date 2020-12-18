@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 @Component
-public class ChargeController {
+public class ChargeScheduler {
     private final TeslaClient teslaClient;
     private final ChargeStateService chargeStateService;
     private final RequiredChargesRepository requiredChargesRepository;
@@ -19,7 +19,7 @@ public class ChargeController {
     private final Clock clock;
 
     @Autowired
-    public ChargeController(TeslaClient teslaClient, ChargeStateService chargeStateService, RequiredChargesRepository requiredChargesRepository, ChargeCalculator chargeCalculator, Clock clock) {
+    public ChargeScheduler(TeslaClient teslaClient, ChargeStateService chargeStateService, RequiredChargesRepository requiredChargesRepository, ChargeCalculator chargeCalculator, Clock clock) {
         this.teslaClient = teslaClient;
         this.chargeStateService = chargeStateService;
         this.requiredChargesRepository = requiredChargesRepository;
