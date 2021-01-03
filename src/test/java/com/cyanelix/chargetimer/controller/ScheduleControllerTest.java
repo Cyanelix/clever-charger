@@ -2,11 +2,13 @@ package com.cyanelix.chargetimer.controller;
 
 import com.cyanelix.chargetimer.charges.RequiredChargesRepository;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
+import com.cyanelix.chargetimer.microtypes.RequiredCharge;
 import com.cyanelix.chargetimer.microtypes.WeeklyTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.DayOfWeek;
@@ -107,17 +109,48 @@ class ScheduleControllerTest {
                 post("/schedules/init"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("{" +
-                "'weekly': {" +
-                "   'MONDAY @ 12:00': {" +
-                "       'value': 50" +
-                "   }," +
-                "   'TUESDAY @ 00:00': {" +
-                "       'value': 100" +
-                "   }" +
-                "}" +
-                "}"));
+                        "'weekly': {" +
+                        "   'MONDAY @ 12:00': {" +
+                        "       'value': 50" +
+                        "   }," +
+                        "   'TUESDAY @ 00:00': {" +
+                        "       'value': 100" +
+                        "   }" +
+                        "}" +
+                        "}"));
 
         verify(requiredChargesRepository, times(3))
                 .addWeekly(any(WeeklyTime.class), any(ChargeLevel.class));
+    }
+
+    @Test
+    void createWeeklyRequirement_returnCreated() throws Exception {
+        mockMvc.perform(
+                post("/schedules/weekly")
+                        .contentType("application/json;charset=utf-8")
+                        .content("{" +
+                                "   \"day\": \"MONDAY\"," +
+                                "   \"time\": \"12:00\"," +
+                                "   \"chargeLevel\": 50" +
+                                "}"))
+                .andExpect(status().isCreated());
+
+        verify(requiredChargesRepository).addWeekly(
+                new WeeklyTime(DayOfWeek.MONDAY, LocalTime.NOON), ChargeLevel.of(50));
+    }
+
+    @Test
+    void createException_returnCreated() throws Exception {
+        mockMvc.perform(
+                post("/schedules/exception")
+                        .contentType("application/json;charset=utf-8")
+                        .content("{" +
+                                "   \"dateTime\": \"2021-01-01T12:00:00Z\"," +
+                                "   \"chargeLevel\": 50" +
+                                "}"))
+                .andExpect(status().isCreated());
+
+        verify(requiredChargesRepository).addException(
+                RequiredCharge.of(ChargeLevel.of(50), ZonedDateTime.parse("2021-01-01T12:00:00Z")));
     }
 }

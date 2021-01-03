@@ -2,14 +2,14 @@ package com.cyanelix.chargetimer.controller;
 
 import com.cyanelix.chargetimer.charges.RequiredChargesRepository;
 import com.cyanelix.chargetimer.controller.exception.SchedulesExistException;
+import com.cyanelix.chargetimer.controller.request.ExceptionRequirement;
+import com.cyanelix.chargetimer.controller.request.WeeklyRequirement;
 import com.cyanelix.chargetimer.controller.response.ScheduleResponse;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.microtypes.WeeklyTime;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -50,5 +50,19 @@ public class ScheduleController {
                 ChargeLevel.of(70));
 
         return getSchedule();
+    }
+
+    @PostMapping(path = "weekly")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createWeeklyRequirement(@RequestBody WeeklyRequirement weeklyRequirement) {
+        requiredChargesRepository.addWeekly(
+                weeklyRequirement.getWeeklyTime(),
+                weeklyRequirement.getChargeLevel());
+    }
+
+    @PostMapping(path = "exception")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createException(@RequestBody ExceptionRequirement exceptionRequirement) {
+        requiredChargesRepository.addException(exceptionRequirement.asRequiredCharge());
     }
 }

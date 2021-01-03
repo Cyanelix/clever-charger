@@ -5,6 +5,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
+import java.util.Objects;
 
 public final class WeeklyTime implements Comparable<WeeklyTime> {
     private static final Comparator<WeeklyTime> NATURAL_ORDER_COMPARATOR =
@@ -35,6 +36,19 @@ public final class WeeklyTime implements Comparable<WeeklyTime> {
     @Override
     public int compareTo(WeeklyTime that) {
         return NATURAL_ORDER_COMPARATOR.compare(this, that);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WeeklyTime that = (WeeklyTime) o;
+        return dayOfWeek == that.dayOfWeek && localTime.equals(that.localTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dayOfWeek, localTime);
     }
 
     @Override
