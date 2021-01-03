@@ -1,9 +1,9 @@
 package com.cyanelix.chargetimer.charges;
 
-import com.cyanelix.chargetimer.controller.response.ScheduleResponse;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.microtypes.RequiredCharge;
 import com.cyanelix.chargetimer.microtypes.WeeklyTime;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -22,6 +22,7 @@ public class RequiredChargesRepository {
     private final SortedMap<WeeklyTime, ChargeLevel> weekly = new TreeMap<>();
     private SortedMap<ZonedDateTime, ChargeLevel> exceptions = new TreeMap<>();
 
+    @Autowired
     public RequiredChargesRepository(Clock clock) {
         this.clock = clock;
     }

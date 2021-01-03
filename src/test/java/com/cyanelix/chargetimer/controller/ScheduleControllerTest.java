@@ -12,11 +12,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,7 +34,7 @@ class ScheduleControllerTest {
     private RequiredChargesRepository requiredChargesRepository;
 
     @Test
-    void noWeekliesNoExceptions_returnEmptyResponse() throws Exception {
+    void noWeekliesNoExceptions_getSchedules_returnEmptyResponse() throws Exception {
         mockMvc.perform(
                 get("/schedules"))
                 .andExpect(status().isOk())
@@ -37,7 +42,7 @@ class ScheduleControllerTest {
     }
 
     @Test
-    void twoWeekliesTwoExceptions_returnAll() throws Exception {
+    void twoWeekliesTwoExceptions_getSchedules_returnAll() throws Exception {
         Map<WeeklyTime, ChargeLevel> weeklies = new TreeMap<>();
         weeklies.put(new WeeklyTime(DayOfWeek.MONDAY, LocalTime.NOON), ChargeLevel.of(50));
         weeklies.put(new WeeklyTime(DayOfWeek.TUESDAY, LocalTime.MIDNIGHT), ChargeLevel.of(100));
@@ -54,8 +59,65 @@ class ScheduleControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json("{" +
                         "'weekly': {" +
+                        "   'MONDAY @ 12:00': {" +
+                        "       'value': 50" +
+                        "   }," +
+                        "   'TUESDAY @ 00:00': {" +
+                        "       'value': 100" +
+                        "   }" +
                         "}," +
-                        "'exceptions': {}" +
+                        "'exceptions': {" +
+                        "   '2020-01-01T12:00:00Z': {" +
+                        "       'value': 10" +
+                        "   }," +
+                        "   '2020-02-02T22:00:00Z': {" +
+                        "       'value': 20" +
+                        "   }" +
+                        "}" +
                         "}"));
+    }
+
+    @Test
+    void someWeeklies_init_returnConflict() throws Exception {
+        Map<WeeklyTime, ChargeLevel> weeklies = new TreeMap<>();
+        weeklies.put(new WeeklyTime(DayOfWeek.MONDAY, LocalTime.NOON), ChargeLevel.of(50));
+        weeklies.put(new WeeklyTime(DayOfWeek.TUESDAY, LocalTime.MIDNIGHT), ChargeLevel.of(100));
+
+        given(requiredChargesRepository.getWeeklySchedule()).willReturn(weeklies);
+
+        mockMvc.perform(
+                post("/schedules/init"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Weekly schedules already exist"));
+    }
+
+    @Test
+    void noWeeklies_init_createsWeekliesAndReturns() throws Exception {
+        Map<WeeklyTime, ChargeLevel> weeklies = new TreeMap<>();
+        weeklies.put(new WeeklyTime(DayOfWeek.MONDAY, LocalTime.NOON), ChargeLevel.of(50));
+        weeklies.put(new WeeklyTime(DayOfWeek.TUESDAY, LocalTime.MIDNIGHT), ChargeLevel.of(100));
+
+        given(requiredChargesRepository.getWeeklySchedule())
+                // First return no required charges
+                .willReturn(Collections.emptyMap())
+                // Then assume some init happened and return some values
+                .willReturn(weeklies);
+
+        mockMvc.perform(
+                post("/schedules/init"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{" +
+                "'weekly': {" +
+                "   'MONDAY @ 12:00': {" +
+                "       'value': 50" +
+                "   }," +
+                "   'TUESDAY @ 00:00': {" +
+                "       'value': 100" +
+                "   }" +
+                "}" +
+                "}"));
+
+        verify(requiredChargesRepository, times(3))
+                .addWeekly(any(WeeklyTime.class), any(ChargeLevel.class));
     }
 }
