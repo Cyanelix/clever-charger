@@ -4,6 +4,8 @@ import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.tesla.exception.TeslaClientException;
 import com.cyanelix.chargetimer.tesla.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,8 @@ import java.util.function.Supplier;
 
 @Component
 public class TeslaClient {
+    private static final Logger LOG = LoggerFactory.getLogger(TeslaClient.class);
+
     private final RestTemplate restTemplate;
     private final TeslaClientConfig teslaClientConfig;
     private final TeslaApiCache teslaApiCache;
@@ -74,6 +78,8 @@ public class TeslaClient {
             return request.get();
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode().equals(HttpStatus.REQUEST_TIMEOUT)) {
+                LOG.debug("Assuming car is asleep; try waking it");
+
                 // Assume the car's asleep and ask it to wake up.
                 Vehicle initialWake = wake().getVehicle();
 
@@ -84,6 +90,7 @@ public class TeslaClient {
                     // and if it does, we only expect to have a single thread running
                     // at a time anyway, so no issue for it to block.
                     try {
+                        LOG.debug("The car was asleep, wait 30 seconds for it to wake up");
                         TimeUnit.SECONDS.sleep(teslaClientConfig.getWakeUpWaitSeconds());
                     } catch (InterruptedException e) {
                         // Do nothing.
@@ -91,14 +98,20 @@ public class TeslaClient {
 
                     // Call the wake_up endpoint again, if it's awake now retry the
                     // original request.
+                    LOG.debug("Check if it's awake now");
                     Vehicle wakeResult = wake().getVehicle();
                     if (wakeResult.getState().equals("online")) {
+                        LOG.debug("Yes, it's online; retry the original request");
                         return request.get();
                     }
+
+                    LOG.debug("No, current state is: {}", wakeResult.getState());
+
+                    throw new CarIsUnreachableException("Car is unreachable even after attempted wake, current state is: " + wakeResult.getState());
                 }
 
                 // Request timed-out but car wasn't asleep.
-                throw new CarIsUnreachableException();
+                throw new CarIsUnreachableException("Car is unreachable, but wasn't asleep, state is: " + initialWake.getState());
             }
 
             // Not a time-out, rethrow the original exception.

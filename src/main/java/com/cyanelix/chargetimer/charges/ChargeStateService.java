@@ -4,6 +4,7 @@ import com.cyanelix.chargetimer.tesla.TeslaClient;
 import com.cyanelix.chargetimer.tesla.model.ChargeState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 
@@ -31,7 +32,11 @@ public class ChargeStateService {
 
             return chargeState;
         } catch (HttpStatusCodeException ex) {
-            LOG.warn("HTTP error when requesting charge state", ex);
+            if (ex.getStatusCode().equals(HttpStatus.REQUEST_TIMEOUT)) {
+                LOG.debug("Timeout received; probably sleeping");
+            } else {
+                LOG.warn("HTTP error when requesting charge state", ex);
+            }
         }
 
         ChargeState unreachableChargeState = new ChargeState();

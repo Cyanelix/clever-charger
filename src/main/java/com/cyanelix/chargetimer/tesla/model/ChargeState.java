@@ -21,6 +21,15 @@ public class ChargeState {
         return chargingState.equals("Stopped");
     }
 
+    /**
+     * This means we've used the last-known charge state, because an up-to-date value
+     * was not available, probably because the car was asleep or out of network range.
+     * @return True if unknown state, false otherwise.
+     */
+    public boolean isUnknown() {
+        return chargingState.equals("Unknown");
+    }
+
     public ChargeLevel getChargeLevel() {
         return ChargeLevel.of(batteryLevel);
     }

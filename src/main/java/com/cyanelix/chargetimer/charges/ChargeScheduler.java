@@ -57,8 +57,8 @@ public class ChargeScheduler {
 
         LOG.debug("Next charge period: {}", nextChargePeriod);
 
-        // TODO: Might need to wake up the car in either of these cases.
-        if (nextChargePeriod.chargeNow(clock) && chargeState.isReadyToCharge()) {
+        if (nextChargePeriod.chargeNow(clock)
+                && (chargeState.isReadyToCharge() || chargeState.isUnknown())) {
             LOG.debug("Starting charging");
             teslaClient.setChargeLimit(nextRequiredCharge.getChargeLevel());
             teslaClient.startCharging();
