@@ -1,0 +1,12 @@
+tesla:
+  client:
+    baseUrl: https://example.com
+    client_id:
+    client_secret:
+    email:
+    password:
+    vin:
+    wakeUpWaitSeconds: 30
+logging:
+  level:
+    com.cyanelix.chargetimer: DEBUG
