@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.cyanelix</groupId>
     <artifactId>charge-timer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>charge-timer</name>
     <description>Application to start and stop a Tesla charging according to electricity prices</description>
 
