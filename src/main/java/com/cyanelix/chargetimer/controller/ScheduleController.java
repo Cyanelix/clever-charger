@@ -41,13 +41,13 @@ public class ScheduleController {
 
         requiredChargesRepository.addWeekly(
                 new WeeklyTime(DayOfWeek.MONDAY, LocalTime.of(6, 0)),
-                ChargeLevel.of(70));
+                ChargeLevel.of(90));
         requiredChargesRepository.addWeekly(
                 new WeeklyTime(DayOfWeek.TUESDAY, LocalTime.of(6, 0)),
-                ChargeLevel.of(70));
+                ChargeLevel.of(90));
         requiredChargesRepository.addWeekly(
                 new WeeklyTime(DayOfWeek.THURSDAY, LocalTime.of(6, 0)),
-                ChargeLevel.of(70));
+                ChargeLevel.of(90));
 
         return getSchedule();
     }
