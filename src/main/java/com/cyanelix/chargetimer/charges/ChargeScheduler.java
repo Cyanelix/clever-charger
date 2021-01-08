@@ -34,9 +34,10 @@ public class ChargeScheduler {
 
     @Scheduled(fixedRate = 120000L)
     public void chargeIfNeeded() {
-        LOG.debug("Checking...");
-
         ChargeState chargeState = chargeStateService.getChargeState();
+
+        LOG.debug("Current state: {}", chargeState);
+
         if (chargeState.isUnplugged() || chargeState.isFullyCharged()) {
             // Car's unplugged or full; nothing we can do for now.
             LOG.debug("Nothing to do, charge state: {}", chargeState);
