@@ -1,5 +1,7 @@
 package com.cyanelix.chargetimer.octopus.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
@@ -9,11 +11,15 @@ import java.util.Objects;
 
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class UnitRate {
-    private BigDecimal valueIncVat;
-    private ZonedDateTime validFrom;
-    private ZonedDateTime validTo;
+    private final BigDecimal valueIncVat;
+    private final ZonedDateTime validFrom;
+    private final ZonedDateTime validTo;
 
-    public UnitRate(BigDecimal valueIncVat, ZonedDateTime validFrom, ZonedDateTime validTo) {
+    @JsonCreator
+    public UnitRate(
+            @JsonProperty("value_inc_vat") BigDecimal valueIncVat,
+            @JsonProperty("valid_from") ZonedDateTime validFrom,
+            @JsonProperty("valid_to") ZonedDateTime validTo) {
         this.valueIncVat = valueIncVat;
         this.validFrom = validFrom;
         this.validTo = validTo;
