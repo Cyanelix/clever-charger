@@ -1,6 +1,7 @@
-package com.cyanelix.chargetimer.electricity;
+package com.cyanelix.chargetimer.octopus;
 
 import com.cyanelix.chargetimer.octopus.model.UnitRate;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
@@ -11,7 +12,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class AveragedAgileRates {
+@Component
+public class AveragedAgileRates {
     private final Map<LocalTime, BigDecimal> averageRates;
 
     public AveragedAgileRates() {

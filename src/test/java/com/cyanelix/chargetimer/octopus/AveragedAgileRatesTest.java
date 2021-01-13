@@ -1,4 +1,4 @@
-package com.cyanelix.chargetimer.electricity;
+package com.cyanelix.chargetimer.octopus;
 
 import com.cyanelix.chargetimer.octopus.model.UnitRate;
 import org.junit.jupiter.api.Test;
