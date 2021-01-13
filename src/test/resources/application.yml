@@ -7,6 +7,9 @@ tesla:
     password:
     vin:
     wakeUpWaitSeconds: 30
+octopus:
+  client:
+    baseUrl: http://example.com
 logging:
   level:
     com.cyanelix.chargetimer: DEBUG

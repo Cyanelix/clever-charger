@@ -20,7 +20,6 @@ public class FutureRates {
     @Autowired
     public FutureRates(OctopusClient octopusClient) {
         this.octopusClient = octopusClient;
-        cacheUnitRates();
     }
 
     @Scheduled(cron = "0 0 * * * ?")
