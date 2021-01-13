@@ -22,7 +22,6 @@ public class AgileOctopusTariff implements Tariff {
         this.averagedAgileRates = averagedAgileRates;
     }
 
-    // TODO Test this!
     @Override
     public List<PricedRatePeriod> getRatePeriodsBetween(ZonedDateTime from, ZonedDateTime to) {
         List<UnitRate> futureUnitRates = futureRates.getUnitRatesFromNow();
