@@ -26,7 +26,7 @@ jobs:
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       
     - name: Maven version
-      run: mvn version -DnewVersion=${{ VERSION }}
+      run: mvn version -DnewVersion=${{ steps.get_version.outputs.VERSION }}
 
     - name: Build with Maven
       run: mvn -B package --file pom.xml
