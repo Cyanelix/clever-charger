@@ -26,7 +26,7 @@ jobs:
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       
     - name: Maven version
-      run: mvn version -DnewVersion=${{ steps.get_version.outputs.VERSION }}
+      run: mvn versions:set -DnewVersion=${{ steps.get_version.outputs.VERSION }}
 
     - name: Build with Maven
       run: mvn -B package --file pom.xml
@@ -35,6 +35,9 @@ jobs:
       run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        
+    - name: Maven version
+      run: mvn versions:set -DnextSnapshot=true
 
     - uses: stefanzweifel/git-auto-commit-action@v4
       with:
