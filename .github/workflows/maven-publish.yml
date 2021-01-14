@@ -21,6 +21,13 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+    - name: Get tag
+      id: tag
+      uses: dawidd6/action-get-tag@v1
+      
+    - name: Maven version
+      run: mvn version -DnewVersion=${{ tag }}
+
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
@@ -28,3 +35,7 @@ jobs:
       run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
+
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: Apply automatic changes
