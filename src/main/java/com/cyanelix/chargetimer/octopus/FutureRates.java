@@ -30,6 +30,9 @@ public class FutureRates {
     }
 
     public List<UnitRate> getUnitRatesFromNow() {
+        if (unitRates == null) {
+            cacheUnitRates();
+        }
         return unitRates;
     }
 }
