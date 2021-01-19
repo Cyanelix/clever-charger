@@ -82,4 +82,53 @@ class OctopusClientTest {
         assertThat(secondRate.getValidFrom()).isEqualTo("2020-01-01T12:30:00Z");
         assertThat(secondRate.getValidTo()).isEqualTo("2020-01-01T13:00:00Z");
     }
+
+    @Test
+    void getRatesForPastMonth_returnsExpectedRates(MockServerClient mockServerClient) {
+        // Given...
+        mockServerClient.when(
+                HttpRequest.request()
+                        .withMethod("GET")
+                        .withPath("/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/")
+                        .withQueryStringParameter("period_to", "2020-01-01T12:00:00Z%5BUTC%5D")
+                        .withQueryStringParameter("period_from", "2019-12-02T12:00:00Z%5BUTC%5D")
+        ).respond(HttpResponse.response()
+                .withStatusCode(HttpStatusCode.OK_200.code())
+                .withHeader("Content-Type", "application/json")
+                .withBody("{\n" +
+                        "    \"count\": 2,\n" +
+                        "    \"next\": null,\n" +
+                        "    \"previous\": null,\n" +
+                        "    \"results\": [\n" +
+                        "        {\n" +
+                        "            \"value_exc_vat\": 8.8,\n" +
+                        "            \"value_inc_vat\": 9.24,\n" +
+                        "            \"valid_from\": \"2020-12-02T12:30:00Z\",\n" +
+                        "            \"valid_to\": \"2020-12-02T13:00:00Z\"\n" +
+                        "        },\n" +
+                        "        {\n" +
+                        "            \"value_exc_vat\": 12.62,\n" +
+                        "            \"value_inc_vat\": 13.251,\n" +
+                        "            \"valid_from\": \"2020-12-02T12:00:00Z\",\n" +
+                        "            \"valid_to\": \"2020-12-02T12:30:00Z\"\n" +
+                        "        }" +
+                        "    ]" +
+                        "}"));
+
+        // When...
+        UnitRatesResponse ratesFromNow = octopusClient.getRatesForPastMonth();
+
+        // Then...
+        assertThat(ratesFromNow.getResults()).hasSize(2);
+
+        UnitRate firstRate = ratesFromNow.getResults().get(0);
+        assertThat(firstRate.getValueIncVat()).isEqualTo("13.251");
+        assertThat(firstRate.getValidFrom()).isEqualTo("2020-12-02T12:00:00Z");
+        assertThat(firstRate.getValidTo()).isEqualTo("2020-12-02T12:30:00Z");
+
+        UnitRate secondRate = ratesFromNow.getResults().get(1);
+        assertThat(secondRate.getValueIncVat()).isEqualTo("9.24");
+        assertThat(secondRate.getValidFrom()).isEqualTo("2020-12-02T12:30:00Z");
+        assertThat(secondRate.getValidTo()).isEqualTo("2020-12-02T13:00:00Z");
+    }
 }

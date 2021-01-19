@@ -25,12 +25,32 @@ public class OctopusClient {
     }
 
     public UnitRatesResponse getRatesFromNow() {
-        UriComponentsBuilder uriBuilder =
-                UriComponentsBuilder.fromHttpUrl(
-                        octopusClientConfig.getBaseUrl() + "/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/")
-                        .queryParam("period_from", ZonedDateTime.now(clock).format(DateTimeFormatter.ISO_DATE_TIME));
+        UriComponentsBuilder uriBuilder = getUriComponentsBuilder(ZonedDateTime.now(clock), null);
 
         return restTemplate.getForEntity(uriBuilder.toUriString(), UnitRatesResponse.class)
                 .getBody();
+    }
+
+    public UnitRatesResponse getRatesForPastMonth() {
+        ZonedDateTime now = ZonedDateTime.now(clock);
+        ZonedDateTime thirtyDaysAgo = now.minusDays(30L);
+
+        UriComponentsBuilder uriBuilder = getUriComponentsBuilder(thirtyDaysAgo, now);
+
+        return restTemplate.getForEntity(uriBuilder.toUriString(), UnitRatesResponse.class)
+                .getBody();
+    }
+
+    private UriComponentsBuilder getUriComponentsBuilder(ZonedDateTime start, ZonedDateTime end) {
+        UriComponentsBuilder uriBuilder =
+                UriComponentsBuilder.fromHttpUrl(
+                        octopusClientConfig.getBaseUrl() + "/v1/products/AGILE-18-02-21/electricity-tariffs/E-1R-AGILE-18-02-21-C/standard-unit-rates/")
+                        .queryParam("period_from", start.format(DateTimeFormatter.ISO_DATE_TIME));
+
+        if (end != null) {
+            uriBuilder.queryParam("period_to", end.format(DateTimeFormatter.ISO_DATE_TIME));
+        }
+
+        return uriBuilder;
     }
 }
