@@ -32,7 +32,7 @@ public class ChargeScheduler {
         this.clock = clock;
     }
 
-    @Scheduled(fixedRate = 120000L)
+    @Scheduled(fixedDelay = 120000L)
     public void chargeIfNeeded() {
         ChargeState chargeState = chargeStateService.getChargeState();
 
