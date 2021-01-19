@@ -22,7 +22,7 @@ public class FutureRates {
         this.octopusClient = octopusClient;
     }
 
-    @Scheduled(cron = "0 0 * * * ?")
+    @Scheduled(cron = "0 30 * * * ?")
     public synchronized void cacheUnitRates() {
         LOG.debug("Getting rates from Octopus");
         unitRates = octopusClient.getRatesFromNow().getResults();
