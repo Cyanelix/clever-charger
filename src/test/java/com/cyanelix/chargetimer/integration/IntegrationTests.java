@@ -6,6 +6,7 @@ import com.cyanelix.chargetimer.charges.RequiredChargesRepository;
 import com.cyanelix.chargetimer.config.TeslaClientConfig;
 import com.cyanelix.chargetimer.electricity.ChargeCalculator;
 import com.cyanelix.chargetimer.electricity.FlexibleOctopusTariff;
+import com.cyanelix.chargetimer.electricity.TimeCalculator;
 import com.cyanelix.chargetimer.microtypes.ChargeLevel;
 import com.cyanelix.chargetimer.microtypes.RequiredCharge;
 import com.cyanelix.chargetimer.microtypes.WeeklyTime;
@@ -41,7 +42,7 @@ public class IntegrationTests {
 
     private final RequiredChargesRepository requiredChargesRepository = new RequiredChargesRepository(clock);
 
-    private final ChargeCalculator chargeCalculator = new ChargeCalculator(new FlexibleOctopusTariff(), clock);
+    private final ChargeCalculator chargeCalculator = new ChargeCalculator(new TimeCalculator(), new FlexibleOctopusTariff(), clock);
 
     private ChargeScheduler chargeScheduler;
 

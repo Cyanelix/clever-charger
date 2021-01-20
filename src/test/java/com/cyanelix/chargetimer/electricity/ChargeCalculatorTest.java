@@ -33,7 +33,7 @@ class ChargeCalculatorTest {
 
     @BeforeEach
     void setUp() {
-        chargeCalculator = new ChargeCalculator(mockTariff, clock);
+        chargeCalculator = new ChargeCalculator(new TimeCalculator(), mockTariff, clock);
     }
 
     @ParameterizedTest(name = "{0} by {1}, with current SOC {2}; charge at {3}")
@@ -78,8 +78,7 @@ class ChargeCalculatorTest {
                 Arguments.of(ChargeLevel.of(100), now.plusHours(5), ChargeLevel.of(95),
                         ZonedDateTime.parse("2020-01-01T03:00Z")),
                 // Charge needed immediately, no tariffs returned.
-                Arguments.of(ChargeLevel.of(100), now, ChargeLevel.of(0),
-                        null)
+                Arguments.of(ChargeLevel.of(100), now, ChargeLevel.of(0), null)
         );
     }
 

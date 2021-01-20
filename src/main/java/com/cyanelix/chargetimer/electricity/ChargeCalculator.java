@@ -13,14 +13,13 @@ import java.util.List;
 
 @Component
 public class ChargeCalculator {
-    // TODO: Make this variable? Calculate from charge available vs. full battery capacity?
-    private static final float PERCENT_PER_MINUTE = 0.16f;
-
+    private final TimeCalculator timeCalculator;
     private final Tariff tariff;
     private final Clock clock;
 
     @Autowired
-    public ChargeCalculator(Tariff tariff, Clock clock) {
+    public ChargeCalculator(TimeCalculator timeCalculator, Tariff tariff, Clock clock) {
+        this.timeCalculator = timeCalculator;
         this.tariff = tariff;
         this.clock = clock;
     }
@@ -31,7 +30,7 @@ public class ChargeCalculator {
         }
 
         int percentRequired = requiredCharge.getChargeLevel().getValue() - currentCharge.getValue();
-        float numberOfSeconds = (percentRequired / PERCENT_PER_MINUTE) * 60f;
+        float numberOfSeconds = timeCalculator.secondsToChargePercent(percentRequired);
 
         List<PricedRatePeriod> ratePeriods = tariff.getRatePeriodsBetween(
                 ZonedDateTime.now(clock), requiredCharge.getRequiredBy());
