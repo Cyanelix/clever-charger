@@ -25,6 +25,7 @@ public class ChargeCalculator {
     }
 
     public RatePeriod getNextChargePeriod(RequiredCharge requiredCharge, ChargeLevel currentCharge) {
+        // TODO: Do I want this? It means that if I need 20% in 1 hour, but 100% in 3 hours, it will stop at 20% for an hour
         if (currentCharge.equalsOrExceeds(requiredCharge.getChargeLevel())) {
             return RatePeriod.NULL_RATE_PERIOD;
         }

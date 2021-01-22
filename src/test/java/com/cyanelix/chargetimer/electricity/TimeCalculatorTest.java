@@ -19,4 +19,10 @@ class TimeCalculatorTest {
         float seconds = timeCalculator.secondsToChargePercent(100);
         assertThat(seconds).isCloseTo(40000f, within(0.05f));
     }
+
+    @Test
+    void onePercent_takesTime() {
+        float seconds = timeCalculator.secondsToChargePercent(1);
+        assertThat(seconds).isEqualTo(400);
+    }
 }
