@@ -13,6 +13,11 @@ public interface RatePeriod {
         public long getSeconds() {
             return 0;
         }
+
+        @Override
+        public String toString() {
+            return "NULL_RATE_PERIOD";
+        }
     };
 
     boolean chargeNow(Clock clock);
